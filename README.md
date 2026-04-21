@@ -1,84 +1,55 @@
 # Claude Code Skills
 
-A curated collection of Claude Code slash command skills.
+A curated collection of Claude Code skills — slash commands and operational playbooks.
 
-## Quick Install
+## Quick Install (slash command skills)
 
 ```bash
-# Clone
 git clone https://github.com/saintgo7/claude-skills.git
 cd claude-skills
-
-# Install all skills globally
 chmod +x install.sh && ./install.sh
-
-# Or install a specific skill
-./install.sh searcam-book
 ```
 
-Restart Claude Code after installing. Skills are available as `/skill-name`.
+Restart Claude Code after installing.
 
 ## Available Skills
 
-| Skill | Command | Description |
-|-------|---------|-------------|
+| Skill | Type | Description |
+|-------|------|-------------|
 | [searcam-book](commands/searcam-book.md) | `/searcam-book` | SearCam technical book chapter writer — Korean & English parallel authoring |
+| [exam-system](exam-system/) | playbook | Online exam operations — monitoring, incident response, student management, post-exam reporting |
 
-## How Skills Work
+## Slash Command Skills (`commands/`)
 
-Skills are Markdown files stored in `~/.claude/commands/`. Each file defines a slash command that Claude Code can invoke. The installer copies files from `commands/` into your global Claude Code commands directory.
+Markdown files installed to `~/.claude/commands/`. Each defines a `/skill-name` command.
+
+```bash
+./install.sh               # install all
+./install.sh searcam-book  # install one
+./uninstall.sh             # remove all
+```
 
 ```
 ~/.claude/commands/
-└── searcam-book.md   ← installed here
+└── searcam-book.md
 ```
 
-## Usage After Install
+## Playbook Skills (`exam-system/`, ...)
+
+Directory-based skills with scripts and templates. Copy to `~/.claude/skills/`.
 
 ```
-/searcam-book "Ch11 Wi-Fi scan chapter"
-/searcam-book "Ch18 testing chapter — update with new test cases"
-/searcam-book --list
-```
-
-## Update
-
-```bash
-git pull
-./install.sh
-```
-
-## Uninstall
-
-```bash
-./uninstall.sh              # Remove all skills from this pack
-./uninstall.sh searcam-book # Remove a specific skill
+~/.claude/skills/exam-system/
+├── SKILL.md        ← trigger phrases & design notes
+├── playbook.md     ← step-by-step operational guide
+├── scripts/        ← ready-to-run operator scripts
+└── templates/      ← reusable code templates
 ```
 
 ## Contributing
 
-1. Add your skill `.md` file to `commands/`
-2. Include YAML frontmatter with `description` and `model` fields
-3. Open a PR
-
-### Skill Template
-
-```markdown
----
-description: "One-line description of what this skill does"
-model: sonnet
----
-
-# Skill Name
-
-[What this skill does and when to use it]
-
-## Usage
-
-$ARGUMENTS examples:
-- "example input 1"
-- "example input 2"
-```
+1. Slash commands: add `.md` to `commands/` with YAML frontmatter
+2. Playbooks: add a directory under the repo root
 
 ## License
 
