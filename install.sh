@@ -1,109 +1,153 @@
-#!/usr/bin/env bash
-# ──────────────────────────────────────────────────────
-# Claude Code Skills Installer
-# https://github.com/saintgo7/claude-skills
+#!/bin/bash
+# Claude Code skill installer — installs only what you choose.
 #
 # Usage:
-#   ./install.sh              # Install all skills globally
-#   ./install.sh searcam-book # Install a specific skill
-#   ./install.sh --list       # List available skills
-# ──────────────────────────────────────────────────────
+#   ./install.sh --list              show available skills
+#   ./install.sh <skill-name>        install a skill
+#   ./install.sh --remove <skill>    uninstall a skill
+#
+# Example:
+#   ./install.sh exam-system
+#   ./install.sh searcam-book
 
-set -euo pipefail
+set -e
 
-SKILLS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/commands" && pwd)"
-TARGET_DIR="$HOME/.claude/commands"
-BACKUP_DIR="$HOME/.claude/commands-backup-$(date +%Y%m%d%H%M%S)"
+REPO="https://github.com/saintgo7/claude-skills.git"
+SKILLS_DIR="$HOME/.claude/skills"
+COMMANDS_DIR="$HOME/.claude/commands"
+TMP_DIR="/tmp/claude-skills-$$"
 
-# ── Colors ──
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+# Registry — add a line here whenever a new skill is added to the repo.
+# Format: "name|type|description"
+#   type "skill"   → installed to ~/.claude/skills/<name>/
+#   type "command" → installs commands/<name>.md to ~/.claude/commands/
+REGISTRY=(
+  "exam-system|skill|온라인 시험 운영 플레이북 (모니터링·대응·사후 통계)"
+  "searcam-book|command|SearCam 기술 서적 챕터 작성 슬래시 커맨드"
+)
 
-info()    { echo -e "${CYAN}[INFO]${NC} $*"; }
-success() { echo -e "${GREEN}[OK]${NC}   $*"; }
-warn()    { echo -e "${YELLOW}[WARN]${NC} $*"; }
-error()   { echo -e "${RED}[ERROR]${NC} $*" >&2; }
+# ── helpers ────────────────────────────────────────────────────────────────
 
-# ── List mode ──
-if [[ "${1:-}" == "--list" ]]; then
-  echo ""
+find_entry() {
+  local name="$1"
+  for entry in "${REGISTRY[@]}"; do
+    [ "$(echo "$entry" | cut -d'|' -f1)" = "$name" ] && echo "$entry" && return
+  done
+}
+
+list_skills() {
   echo "Available skills:"
   echo ""
-  for f in "$SKILLS_DIR"/*.md; do
-    name="$(basename "$f" .md)"
-    desc="$(grep -m1 '^description:' "$f" | sed 's/description: *"//' | sed 's/".*//' || echo "(no description)")"
-    printf "  %-25s %s\n" "$name" "$desc"
+  for entry in "${REGISTRY[@]}"; do
+    name=$(echo "$entry" | cut -d'|' -f1)
+    type=$(echo "$entry" | cut -d'|' -f2)
+    desc=$(echo "$entry" | cut -d'|' -f3)
+    printf "  %-20s  %-10s  %s\n" "$name" "[$type]" "$desc"
   done
   echo ""
-  exit 0
-fi
+  echo "Usage:"
+  echo "  ./install.sh <skill-name>"
+  echo "  ./install.sh --remove <skill-name>"
+}
 
-# ── Create target dir ──
-mkdir -p "$TARGET_DIR"
+sparse_clone() {
+  local path="$1"
+  rm -rf "$TMP_DIR"
+  git clone --filter=blob:none --sparse --depth=1 --quiet "$REPO" "$TMP_DIR"
+  git -C "$TMP_DIR" sparse-checkout set "$path" --quiet
+}
 
-# ── Collect skills to install ──
-if [[ $# -gt 0 && "${1:-}" != "--list" ]]; then
-  # Specific skill(s) requested
-  FILES=()
-  for arg in "$@"; do
-    skill_file="$SKILLS_DIR/${arg%.md}.md"
-    if [[ ! -f "$skill_file" ]]; then
-      error "Skill not found: $arg"
-      echo "Run './install.sh --list' to see available skills."
-      exit 1
-    fi
-    FILES+=("$skill_file")
-  done
-else
-  # All skills
-  mapfile -t FILES < <(find "$SKILLS_DIR" -maxdepth 1 -name "*.md" | sort)
-fi
+cleanup() { rm -rf "$TMP_DIR"; }
+trap cleanup EXIT
 
-if [[ ${#FILES[@]} -eq 0 ]]; then
-  warn "No skill files found in $SKILLS_DIR"
-  exit 0
-fi
+# ── install ────────────────────────────────────────────────────────────────
 
-echo ""
-echo "Claude Code Skills Installer"
-echo "────────────────────────────"
-echo "Source : $SKILLS_DIR"
-echo "Target : $TARGET_DIR"
-echo ""
+install_skill() {
+  local name="$1"
+  local entry
+  entry=$(find_entry "$name")
 
-INSTALLED=0
-SKIPPED=0
-BACKED_UP=0
-
-for src in "${FILES[@]}"; do
-  name="$(basename "$src")"
-  dest="$TARGET_DIR/$name"
-
-  if [[ -f "$dest" ]]; then
-    # Backup existing file before overwrite
-    if [[ $BACKED_UP -eq 0 ]]; then
-      mkdir -p "$BACKUP_DIR"
-    fi
-    cp "$dest" "$BACKUP_DIR/$name"
-    BACKED_UP=$((BACKED_UP + 1))
-    warn "Overwriting existing skill (backup saved): $name"
+  if [ -z "$entry" ]; then
+    echo "ERROR: '$name' not found. Run ./install.sh --list"
+    exit 1
   fi
 
-  cp "$src" "$dest"
-  success "Installed: /${name%.md}"
-  INSTALLED=$((INSTALLED + 1))
-done
+  local type dest
+  type=$(echo "$entry" | cut -d'|' -f2)
 
-echo ""
-echo "────────────────────────────"
-echo "Installed : $INSTALLED skill(s)"
-if [[ $BACKED_UP -gt 0 ]]; then
-  echo "Backups   : $BACKED_UP file(s) → $BACKUP_DIR"
-fi
-echo ""
-echo "Restart Claude Code (or open a new session) to use the new skills."
-echo "Type /<skill-name> to invoke any installed skill."
-echo ""
+  echo "→ Downloading '$name'..."
+
+  if [ "$type" = "skill" ]; then
+    sparse_clone "$name"
+    dest="$SKILLS_DIR/$name"
+    mkdir -p "$SKILLS_DIR"
+    rm -rf "$dest"
+    cp -r "$TMP_DIR/$name" "$dest"
+    echo "✓ Installed → $dest"
+
+  elif [ "$type" = "command" ]; then
+    sparse_clone "commands"
+    mkdir -p "$COMMANDS_DIR"
+    cp "$TMP_DIR/commands/${name}.md" "$COMMANDS_DIR/"
+    dest="$COMMANDS_DIR/${name}.md"
+    echo "✓ Installed → $dest"
+  fi
+
+  echo "Restart Claude Code to use the skill."
+}
+
+# ── remove ─────────────────────────────────────────────────────────────────
+
+remove_skill() {
+  local name="$1"
+  local entry
+  entry=$(find_entry "$name")
+
+  if [ -z "$entry" ]; then
+    echo "ERROR: '$name' not found. Run ./install.sh --list"
+    exit 1
+  fi
+
+  local type
+  type=$(echo "$entry" | cut -d'|' -f2)
+
+  if [ "$type" = "skill" ]; then
+    local dest="$SKILLS_DIR/$name"
+    if [ -d "$dest" ]; then
+      rm -rf "$dest"
+      echo "✓ Removed $dest"
+    else
+      echo "Not installed: $dest"
+    fi
+
+  elif [ "$type" = "command" ]; then
+    local dest="$COMMANDS_DIR/${name}.md"
+    if [ -f "$dest" ]; then
+      rm "$dest"
+      echo "✓ Removed $dest"
+    else
+      echo "Not installed: $dest"
+    fi
+  fi
+}
+
+# ── main ───────────────────────────────────────────────────────────────────
+
+case "${1:-}" in
+  --list|-l)
+    list_skills
+    ;;
+  --remove|-r)
+    [ -z "${2:-}" ] && { echo "Usage: ./install.sh --remove <skill-name>"; exit 1; }
+    remove_skill "$2"
+    ;;
+  "")
+    echo "Usage:"
+    echo "  ./install.sh --list              show available skills"
+    echo "  ./install.sh <skill-name>        install a skill"
+    echo "  ./install.sh --remove <skill>    uninstall a skill"
+    ;;
+  *)
+    install_skill "$1"
+    ;;
+esac
