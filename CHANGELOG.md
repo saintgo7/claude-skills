@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `set -a; source .env; set +a` 위험성, supervisor + 자식 pytest 환경 분리 패턴)
 
 ### Changed
-- `install.sh` REGISTRY **39 → 40 entries** (39 skills + 1 command) — 신규 1개 추가
+- `install.sh` REGISTRY **38 → 39 entries** (38 skills + 1 command) — 신규 1개 추가
 
 ## [0.7.0] - 2026-05-02
 
