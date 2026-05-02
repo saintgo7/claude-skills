@@ -52,6 +52,7 @@ REGISTRY=(
   "prometheus-fastapi-metrics|skill|FastAPI Prometheus 커스텀 메트릭 추가 (Counter/Histogram/Gauge 3계층, cardinality 제한, Grafana 시작)"
   "quota-rate-limit-pattern|skill|API 게이트웨이 3계층 quota/rate-limit (slowapi RPM + asyncio.Semaphore + DB daily, 50동접 검증)"
   "fastapi-async-patterns|skill|FastAPI + asyncio + httpx + SQLAlchemy async 6 패턴 (SSE 스트리밍, lifespan, DI, Semaphore, async DB, background task)"
+  "vllm-tool-calling|skill|vLLM tool calling 3단계 디펜스 (server parser + model weight + client fallback) — case 15/16/17 일반화"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────

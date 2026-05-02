@@ -1,0 +1,103 @@
+"""vLLM tool calling fallback parser — client/gateway side.
+
+vLLM 의 server-side parser 와 모델 weight 가 정상이어도,
+streaming chunk 경계 / weight regression / opening tag 누락 등의
+케이스에서 tool_call 이 user-visible content 로 leak 된다.
+
+이 모듈은 응답을 받기 직전 한 번 더 검사하여
+content 안의 tool_call 패턴을 OpenAI 표준 tool_calls 로 promote 한다.
+
+3개 패턴 지원:
+  1) Hermes JSON     <tool_call>{"name":...,"arguments":...}</tool_call>
+  2) Qwen3 XML       <tool_call><function=name><parameter=k>v</parameter>...</function></tool_call>
+  3) Bare JSON       {"name":..., "arguments":...}  (opening tag 누락 케이스)
+
+성능: tool_calls 가 이미 비어있지 않으면 즉시 return.
+정상 응답에는 추가 비용 없음. leak 케이스만 ~1ms regex 비용.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import uuid
+from typing import Any
+
+# 정규식은 모듈 로드 시 한 번만 컴파일
+_HERMES_RE = re.compile(r"<tool_call>\s*(\{.*?\})\s*</tool_call>", re.DOTALL)
+_QWEN3_RE = re.compile(
+    r"<tool_call>\s*<function=(\w+)>(.*?)</function>\s*</tool_call>", re.DOTALL
+)
+_QWEN3_PARAM_RE = re.compile(r"<parameter=(\w+)>(.*?)</parameter>", re.DOTALL)
+_BARE_JSON_RE = re.compile(
+    r'^\s*(\{[^{}]*"name"\s*:\s*"[^"]+"[^{}]*"arguments"\s*:\s*\{.*?\}\s*\})\s*$',
+    re.DOTALL,
+)
+
+
+def _make_id() -> str:
+    return f"call_{uuid.uuid4().hex[:24]}"
+
+
+def _to_tool_call(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": _make_id(),
+        "type": "function",
+        "function": {"name": name, "arguments": json.dumps(arguments)},
+    }
+
+
+def extract_tool_calls_from_content(message: dict[str, Any]) -> dict[str, Any]:
+    """OpenAI chat completion message 의 content 를 검사하여
+    leak 된 tool_call 을 message['tool_calls'] 로 promote.
+
+    이미 tool_calls 가 있으면 그대로 반환 (overhead 0).
+    매치된 부분은 content 에서 strip.
+    """
+    if message.get("tool_calls"):
+        return message  # server parser 가 이미 잡음
+
+    content = message.get("content") or ""
+    if not content:
+        return message
+
+    tool_calls: list[dict[str, Any]] = []
+
+    # 1) Hermes JSON
+    for m in _HERMES_RE.finditer(content):
+        try:
+            obj = json.loads(m.group(1))
+            tool_calls.append(_to_tool_call(obj["name"], obj.get("arguments", {})))
+        except (json.JSONDecodeError, KeyError):
+            continue
+    if tool_calls:
+        message["tool_calls"] = tool_calls
+        message["content"] = _HERMES_RE.sub("", content).strip() or None
+        return message
+
+    # 2) Qwen3 XML
+    for m in _QWEN3_RE.finditer(content):
+        name = m.group(1)
+        params: dict[str, Any] = {}
+        for pm in _QWEN3_PARAM_RE.finditer(m.group(2)):
+            params[pm.group(1)] = pm.group(2).strip()
+        tool_calls.append(_to_tool_call(name, params))
+    if tool_calls:
+        message["tool_calls"] = tool_calls
+        message["content"] = _QWEN3_RE.sub("", content).strip() or None
+        return message
+
+    # 3) Bare JSON (opening tag 누락)
+    m = _BARE_JSON_RE.match(content)
+    if m:
+        try:
+            obj = json.loads(m.group(1))
+            if "name" in obj and "arguments" in obj:
+                message["tool_calls"] = [
+                    _to_tool_call(obj["name"], obj["arguments"])
+                ]
+                message["content"] = None
+        except json.JSONDecodeError:
+            pass
+
+    return message

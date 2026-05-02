@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# vLLM tool calling smoke test — non-stream + stream + leak 검증
+# CI 또는 deploy hook 에 박을 수 있게 의존성 최소화 (curl + jq).
+#
+# 사용:
+#   VLLM_URL=http://localhost:8000 MODEL=Qwen/Qwen3-Coder-30B \
+#     bash smoke-test.sh
+# 종료 코드 0 = 통과, 1 = 실패.
+
+set -e
+
+VLLM_URL="${VLLM_URL:-http://localhost:8000}"
+MODEL="${MODEL:?set MODEL env var}"
+TIMEOUT="${TIMEOUT:-30}"
+
+TOOL_DEF='[{"type":"function","function":{"name":"get_weather","description":"Get weather for a city","parameters":{"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}}}]'
+USER_MSG='What is the weather in Seoul? Use the get_weather tool.'
+
+echo "== [1/3] non-stream =="
+RESP=$(curl -sS --max-time "$TIMEOUT" "$VLLM_URL/v1/chat/completions" \
+  -H 'Content-Type: application/json' \
+  -d "$(jq -n --arg model "$MODEL" --arg msg "$USER_MSG" --argjson tools "$TOOL_DEF" \
+    '{model:$model, messages:[{role:"user",content:$msg}], tools:$tools, tool_choice:"auto", stream:false}')")
+
+TOOL_CALLS=$(echo "$RESP" | jq -r '.choices[0].message.tool_calls // empty')
+if [ -z "$TOOL_CALLS" ] || [ "$TOOL_CALLS" = "null" ] || [ "$TOOL_CALLS" = "[]" ]; then
+  echo "FAIL: tool_calls empty in non-stream response"
+  echo "$RESP" | jq .
+  exit 1
+fi
+CONTENT=$(echo "$RESP" | jq -r '.choices[0].message.content // ""')
+if echo "$CONTENT" | grep -qE '<tool_call>|<function='; then
+  echo "FAIL: tool call leaked into content (non-stream)"
+  echo "content: $CONTENT"
+  exit 1
+fi
+echo "OK non-stream: $(echo "$TOOL_CALLS" | jq -r '.[0].function.name')"
+
+echo "== [2/3] stream =="
+STREAM=$(curl -sS --max-time "$TIMEOUT" -N "$VLLM_URL/v1/chat/completions" \
+  -H 'Content-Type: application/json' \
+  -d "$(jq -n --arg model "$MODEL" --arg msg "$USER_MSG" --argjson tools "$TOOL_DEF" \
+    '{model:$model, messages:[{role:"user",content:$msg}], tools:$tools, tool_choice:"auto", stream:true}')")
+
+# SSE 라인 누적 → tool_calls delta 가 한 번이라도 등장하는지 확인
+FOUND=$(echo "$STREAM" | grep -E '"tool_calls"' | head -1 || true)
+if [ -z "$FOUND" ]; then
+  echo "FAIL: stream chunks contain no tool_calls delta"
+  exit 1
+fi
+LEAK=$(echo "$STREAM" | grep -oE '<tool_call>|<function=' | head -1 || true)
+if [ -n "$LEAK" ]; then
+  echo "FAIL: tool call leaked into stream content ($LEAK)"
+  exit 1
+fi
+echo "OK stream: tool_calls delta seen, no leak"
+
+echo "== [3/3] all checks passed =="
+exit 0
