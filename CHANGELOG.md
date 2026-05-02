@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (현재 main 브랜치에 머지되었으나 아직 태깅되지 않은 변경사항이 여기에 누적됩니다.)
 
+## [0.7.0] - 2026-05-02
+
+[`9290bc3`] feat: observability-bundle skill (Prometheus + Loki + OTel + Sentry 3 pillar 통합)
+[`c13c998`] feat: dependency-vulnerability-fix skill (pip-audit 4단계 안전 fix)
+
+### Added
+- `dependency-vulnerability-fix` skill — pip-audit 발견 취약점 **안전 fix 4단계** 패턴
+  (스캔 → 분류 → patch-only 안전 업그레이드 → 회귀 검증;
+  vLLM/PyTorch 같은 큰 의존성을 깨뜨리지 않으면서 patch 단위만 정밀 업그레이드;
+  GEM-LLM `vllm-env` 27 vulnerabilities fix 작업에서 도출,
+  CVE 분류 (critical / high / medium), patch-version delta 정책,
+  pin 충돌 회피 (transformers/torch/flashinfer 매트릭스 보존),
+  pip-audit CI 통합 권고, lockfile 회귀 검증, supply chain 위험 노트;
+  scripts/ 도우미 — 회귀 패키지 detect, lockfile diff)
+- `observability-bundle` skill — FastAPI 통합 **관측성 3 pillar** (metrics / logs / traces) + Sentry
+  (`prometheus-fastapi-metrics` 가 metrics 1 pillar 만 다룬다면, 이 skill 은 logs/traces 까지 확장하고
+  4 도구를 한 스택으로 묶는다 — Prometheus + Loki + OpenTelemetry + Sentry;
+  templates/ — Sentry SDK 통합, OTel FastAPI/SQLAlchemy/httpx instrumentation,
+  Loki structured logging, Grafana datasource provisioning,
+  trace-id ↔ log line correlation 패턴, sampling 전략, error budget 가이드;
+  GEM-LLM Go-Live 4.6 (Sentry) / 4.7 (OTel) / 4.8 (로그 집계) P2-P3 권고 충족 가이드)
+
+### Changed
+- `install.sh` REGISTRY **36 → 38 entries** (37 skills + 1 command) — 신규 2개 추가
+
 ## [0.6.0] - 2026-05-02
 
 [`5c5a151`] feat: vllm-tool-calling skill (3단계 디펜스 일반화)
