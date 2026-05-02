@@ -1,0 +1,39 @@
+"""Sentry 초기화 — FastAPI + SQLAlchemy 통합.
+
+요구사항:
+    pip install "sentry-sdk[fastapi,sqlalchemy]>=2.0"
+
+환경변수:
+    SENTRY_DSN       — Sentry 프로젝트 DSN (필수)
+    ENV              — production / staging / dev (기본 production)
+    APP_VERSION      — git sha 또는 semver (release 추적용)
+"""
+
+import os
+
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+
+
+def init_sentry() -> None:
+    dsn = os.environ.get("SENTRY_DSN")
+    if not dsn:
+        # 로컬 개발 — Sentry 없이도 부팅 가능
+        return
+
+    sentry_sdk.init(
+        dsn=dsn,
+        integrations=[FastApiIntegration(), SqlalchemyIntegration()],
+        traces_sample_rate=0.1,        # 10 % 만 performance trace
+        profiles_sample_rate=0.0,      # profiling off (CPU 부담)
+        send_default_pii=False,        # 이메일/IP 자동 수집 차단
+        environment=os.environ.get("ENV", "production"),
+        release=os.environ.get("APP_VERSION", "unknown"),
+    )
+
+
+# 사용법 — main.py 최상단에서 한 번만 호출
+# from .observability.sentry_init import init_sentry
+# init_sentry()
+# app = FastAPI(...)
