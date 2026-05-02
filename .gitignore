@@ -1,7 +1,10 @@
 .DS_Store
 *.swp
+*.local
 __pycache__/
 *.py[cod]
+*.pyc
+*.pyo
 node_modules/
 *.log
 .env

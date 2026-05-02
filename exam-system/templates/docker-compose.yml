@@ -1,0 +1,29 @@
+services:
+  app:
+    build:
+      context: ./src
+      dockerfile: Dockerfile.prod
+    init: true
+    container_name: ${APP_NAME:-exam-app}
+    restart: always
+    ports:
+      # Bind to loopback only; put a reverse proxy / tunnel in front
+      - "127.0.0.1:${HOST_PORT:-5001}:5001"
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY}
+      # Set TZ=UTC inside the container so Python's datetime.now(timezone.utc)
+      # behaves identically on every host. Render to local time in the UI only.
+      - TZ=UTC
+    volumes:
+      - db-data:/app/instance
+      - upload-data:/app/uploads
+    networks:
+      - default
+
+volumes:
+  db-data:
+  upload-data:
+
+networks:
+  default:
