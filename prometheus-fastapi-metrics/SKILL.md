@@ -206,6 +206,33 @@ sum by (reason) (rate(quota_rejections_total[5m]))
 
 Grafana dashboard 시작은 위 6개 query를 패널로 만들면 충분. SLO/alert는 5xx 비율 + P99 latency 두 개부터.
 
+## Grafana 대시보드 시작점
+
+[templates/grafana-dashboard.json.template](templates/grafana-dashboard.json.template) 가 8 패널 starter dashboard. `<service>` placeholder를 자기 메트릭 prefix로 sed 치환 후 Grafana에 import.
+
+```bash
+# 예: gateway_* 메트릭이라면
+sed 's/<service>/gateway/g' \
+  prometheus-fastapi-metrics/templates/grafana-dashboard.json.template \
+  > grafana-dashboard.json
+# Grafana → Dashboards → Import → Upload JSON file
+```
+
+8 패널 PromQL 한 줄 요약 (schemaVersion 38, datasource 변수 `${DS_PROMETHEUS}`):
+
+| # | 패널 | PromQL |
+|---|------|--------|
+| 1 | Request rate | `sum by (status) (rate(<service>_requests_total[5m]))` |
+| 2 | Chat completions rate | `sum by (model) (rate(<service>_chat_completions_total[5m]))` |
+| 3 | Latency p50/p95/p99 | `histogram_quantile(0.50\|0.95\|0.99, sum by (le, model) (rate(<service>_chat_latency_ms_bucket[5m])))` |
+| 4 | Token throughput | `sum by (kind) (rate(<service>_tokens_total[5m]))` |
+| 5 | Active requests (gauge) | `<service>_active_requests` |
+| 6 | Quota rejections | `sum by (reason) (rate(<service>_quota_rejections_total[5m]))` |
+| 7 | 5xx error rate | `sum(rate(<service>_requests_total{status=~"5.."}[5m])) / clamp_min(sum(rate(<service>_requests_total[5m])), 1e-9)` |
+| 8 | GPU util (외부 exporter) | `nvidia_smi_utilization_gpu_ratio * 100` 또는 `DCGM_FI_DEV_GPU_UTIL` |
+
+8번 패널은 nvidia_gpu_exporter 또는 DCGM 같은 외부 의존이 있어야 채워진다 (없으면 빈 패널).
+
 ## 흔한 함정
 
 1. **Cardinality 폭발** — 라벨에 user_id, request_id, full URL 넣음. → `/metrics` 응답이 MB 단위로 부풀고 Prometheus가 죽는다. 화이트리스트 필수.
