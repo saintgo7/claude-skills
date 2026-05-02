@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (현재 main 브랜치에 머지되었으나 아직 태깅되지 않은 변경사항이 여기에 누적됩니다.)
 
+## [0.4.0] - 2026-05-02
+
+[`5447aea`] feat: 3 new skills (vllm-bootstrap, bilingual-book-authoring, k8s-pod-autostart) + 22 READMEs
+[`(this commit)`] feat: llm-eval-multi-model skill + CHANGELOG v0.4.0
+
+### Added
+- `vllm-bootstrap` skill — vLLM 처음부터 부팅 가이드
+  (의존성 매트릭스 vllm 0.19.1 / transformers 5.7 / flashinfer 0.6.8.post1,
+  TP=1/2/4/8 선택, tool-call-parser 매핑 6종, 부팅 실패 13개 패턴,
+  setsid + nohup launch 표준; gem-llm-vllm-debug 일반화)
+- `bilingual-book-authoring` skill — 한/영 동시 책 저작 워크플로
+  (~1000p 검증; OUTLINE mirror, 다이어그램 공유, Part 멀티 에이전트 분산,
+  에러 사례 수집 패턴, 한/영 미세 차이 처리 — 영어 idiom vs 한국어 자연스러움)
+- `k8s-pod-autostart` skill — K8s pod / 컨테이너 환경 자동 시작 (systemd 없이)
+  (s6-overlay cont-init, .bashrc one-shot guard, watchdog 패턴,
+  livenessProbe + restartPolicy 4가지 패턴 비교)
+- `llm-eval-multi-model` skill — 여러 LLM 동시 평가/비교
+  (asyncio.gather 병렬 호출, TTFT/TPOT/p50/p95/p99 메트릭, LLM-as-judge,
+  tool calling 정확도 채점, 한국어/영어 응답 품질 비교; Dense vs MoE 사례)
+- 22개 skill에 개별 `README.md` 추가 — GitHub 노출 시 각 skill 폴더에서 바로 읽기
+  (`./install.sh <name>` 명령, 사용 시점 트리거 phrase, SKILL.md 링크)
+- GitHub Actions CI status 체크 통합
+
+### Changed
+- `install.sh` REGISTRY 26 entries (25 skills + 1 command)
+- `README.md` skill catalog 표 — 새 skill 4개 추가 (vllm-bootstrap,
+  bilingual-book-authoring, k8s-pod-autostart, llm-eval-multi-model)
+
 ## [0.3.0] - 2026-05-02
 
 [`6818823`] feat: multi-agent-orchestrator skill + GitHub Actions CI
@@ -90,7 +118,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - GitHub에서 선택한 skill만 다운로드 (전체 repo clone 불필요)
   - `./install.sh --list` 로 사용 가능한 skill 목록 표시
 
-[Unreleased]: https://github.com/USER/claude-skills/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/USER/claude-skills/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/USER/claude-skills/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/USER/claude-skills/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/USER/claude-skills/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/USER/claude-skills/compare/v0.1.0...v0.2.0

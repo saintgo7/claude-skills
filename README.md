@@ -11,6 +11,13 @@ Curated collection of Claude Code skills — bilingual research/code projects, L
 | [`project-bootstrap`](project-bootstrap/) | skill | bilingual research/code 프로젝트 한 번에 부트스트랩 (GitHub + Cloudflare + 한/영 책 + 한/영 논문 + Pandoc 빌드 파이프라인) |
 | [`pandoc-bilingual-build`](pandoc-bilingual-build/) | skill | 기존 프로젝트에 한/영 Pandoc 빌드 파이프라인 추가 (project-bootstrap의 빌드만 분리) |
 | [`multi-agent-orchestrator`](multi-agent-orchestrator/) | skill | 대량 작업 (책 ~1000p, 코드 ~12K LOC) 8+ 에이전트 병렬 디스패치 패턴 |
+| [`bilingual-book-authoring`](bilingual-book-authoring/) | skill | 한/영 동시 책 저작 워크플로 (~1000p 검증, OUTLINE mirror, 멀티 에이전트) |
+| [`cloudflare-tunnel-setup`](cloudflare-tunnel-setup/) | skill | Cloudflare Tunnel 처음부터 셋업 (도메인 → 로컬 HTTPS, SSH ProxyCommand) |
+| [`vllm-bootstrap`](vllm-bootstrap/) | skill | vLLM 처음부터 부팅 가이드 (의존성 매트릭스, TP, tool-call-parser, 13 실패 패턴) |
+| [`k8s-pod-autostart`](k8s-pod-autostart/) | skill | K8s pod / 컨테이너 자동 시작 (systemd 없이; s6, .bashrc, watchdog, liveness) |
+| [`llm-eval-multi-model`](llm-eval-multi-model/) | skill | 여러 LLM 동시 평가/비교 (latency, throughput, 정확도, tool calling, 한/영 응답) |
+| [`fastapi-gateway-pattern`](fastapi-gateway-pattern/) | skill | FastAPI OpenAI 호환 LLM 게이트웨이 (인증/quota/스트리밍/SQLAlchemy pool) |
+| [`sqlite-wal-safe-ops`](sqlite-wal-safe-ops/) | skill | SQLite WAL 모드 운영 함정 회피 (안전한 백업, journal_mode 선택) |
 | [`exam-system`](exam-system/) | skill | 온라인 시험 운영 플레이북 (모니터링·대응·사후 통계) |
 | [`searcam-book`](commands/) | command | SearCam 기술 서적 챕터 작성 슬래시 커맨드 |
 | [`gem-llm-overview`](gem-llm-overview/) | skill | GEM-LLM 시스템 전체 구조 + 다른 skill 라우팅 |
