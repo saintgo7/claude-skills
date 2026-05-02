@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (현재 main 브랜치에 머지되었으나 아직 태깅되지 않은 변경사항이 여기에 누적됩니다.)
 
+## [0.6.0] - 2026-05-02
+
+[`5c5a151`] feat: vllm-tool-calling skill (3단계 디펜스 일반화)
+[`23064a8`] feat: fastapi-async-patterns skill (6 검증된 async 패턴)
+[`304d03b`] feat(prometheus-fastapi-metrics): add Grafana dashboard template
+
+### Added
+- `vllm-tool-calling` skill — vLLM tool calling 3-계층 디펜스 운영 가이드
+  (server parser + model weight + client fallback 패턴 일반화; 7 parser 매핑,
+  5개 실패 패턴 — case 15/16/17 일반화, stream chunk-boundary 디버깅 워크플로,
+  stream buffer hold, telemetry, 운영 체크리스트;
+  templates/fallback-parser.py.template — hermes/qwen3/bare-JSON 3패턴 추출,
+  정규식 precompile, 이미 정상 `tool_calls`이면 즉시 pass-through;
+  templates/smoke-test.sh.template — non-stream + stream + leak 검증, curl + jq only)
+- `fastapi-async-patterns` skill — FastAPI + asyncio + httpx + SQLAlchemy async 검증 패턴
+  (GEM-LLM Gateway 50~200 동접 통과; streaming proxy / lifespan / DI / Semaphore /
+  async DB / background task 6 패턴, 함정 종합, 시작 체크리스트;
+  templates/lifespan.py.template, templates/streaming-proxy.py.template)
+- `prometheus-fastapi-metrics` skill에 Grafana dashboard 템플릿 추가
+  (templates/grafana-dashboard.json.template — 8-panel starter dashboard,
+  Grafana 10.x schemaVersion 38, `${DS_PROMETHEUS}` 변수, `<service>` placeholder;
+  SKILL.md "Grafana 대시보드 시작점" 섹션 + 8 PromQL one-liners — requests /
+  chat completions / latency p50/p95/p99 / tokens / active gauge / quota rejections /
+  5xx ratio / GPU util)
+
+### Changed
+- `install.sh` REGISTRY **29 → 32 entries** (31 skills + 1 command) — 신규 2개 추가
+
 ## [0.5.0] - 2026-05-02
 
 [`38cff97`] docs: add missing README.md for bilingual-book-authoring skill
@@ -147,7 +175,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - GitHub에서 선택한 skill만 다운로드 (전체 repo clone 불필요)
   - `./install.sh --list` 로 사용 가능한 skill 목록 표시
 
-[Unreleased]: https://github.com/USER/claude-skills/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/USER/claude-skills/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/USER/claude-skills/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/USER/claude-skills/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/USER/claude-skills/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/USER/claude-skills/compare/v0.2.1...v0.3.0
