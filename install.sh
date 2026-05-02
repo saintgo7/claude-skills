@@ -61,6 +61,7 @@ REGISTRY=(
   "dependency-vulnerability-fix|skill|pip-audit 취약점 안전 fix 4단계 (스캔→분류→patch 업그레이드→회귀) — vLLM/PyTorch 보호"
   "observability-bundle|skill|FastAPI 통합 관측성 (Prometheus + Loki + OpenTelemetry + Sentry, 3 pillar 통합)"
   "env-isolation-pattern|skill|운영 환경변수 → 테스트 누설 방지 (case 18 일반화) — explicit unset + unconditional override + container isolation"
+  "llm-serving-performance-tuning|skill|LLM 서빙 (vLLM + FastAPI) 성능 튜닝 6단계 — GEM-LLM 50/100/200동접 검증 (1282 tok/s, p99 9.1s)"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────

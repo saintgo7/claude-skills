@@ -1,0 +1,110 @@
+"""LLM 서빙 멀티유저 부하 테스트 템플릿.
+
+N keys × M workers = N*M concurrent asyncio 요청.
+p50/p95/p99 latency, RPS, tokens/sec, 실패 분류 자동 계산.
+
+사용:
+    1. KEYS_DIR 에 *.key 파일 N개 (한 줄에 raw API key)
+    2. ENDPOINT 를 게이트웨이 주소로 변경
+    3. python load-test.py.template
+"""
+import asyncio
+import statistics
+import time
+from pathlib import Path
+
+import httpx
+
+# ── 설정 ──────────────────────────────────────────────────────────────
+KEYS_DIR = Path(__file__).parent / "keys"
+ENDPOINT = "http://localhost:8080"
+USERS_PER_KEY = 10                   # 키당 워커 수 (동접 = N keys × USERS_PER_KEY)
+TOTAL_REQUESTS = 200                  # 총 요청 — 워커당 TOTAL_REQUESTS / (N*M) 수행
+TIMEOUT = 60.0                        # 초
+MODEL = "your-model-name"             # vLLM 등록 모델명
+
+
+async def make_request(client: httpx.AsyncClient, key: str, idx: int) -> dict:
+    t0 = time.monotonic()
+    try:
+        resp = await client.post(
+            f"{ENDPOINT}/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {key.strip()}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": MODEL,
+                "messages": [{"role": "user", "content": f"Reply with one word. #{idx}"}],
+                "max_tokens": 20,
+            },
+            timeout=TIMEOUT,
+        )
+        elapsed = time.monotonic() - t0
+        data = resp.json() if resp.status_code == 200 else {}
+        usage = data.get("usage", {})
+        return {
+            "status": resp.status_code,
+            "latency": elapsed,
+            "in_tokens": usage.get("prompt_tokens", 0),
+            "out_tokens": usage.get("completion_tokens", 0),
+        }
+    except Exception as e:
+        return {"status": 0, "latency": time.monotonic() - t0, "error": type(e).__name__}
+
+
+async def worker(client: httpx.AsyncClient, key: str, count: int, results: list):
+    for i in range(count):
+        results.append(await make_request(client, key, i))
+
+
+async def main():
+    keys = [(p.stem, p.read_text().strip()) for p in sorted(KEYS_DIR.glob("*.key"))]
+    if not keys:
+        raise SystemExit(f"No keys in {KEYS_DIR} — create *.key files first")
+
+    concurrency = USERS_PER_KEY * len(keys)
+    per_worker = max(1, TOTAL_REQUESTS // concurrency)
+    print(f"Keys: {len(keys)}  Workers/key: {USERS_PER_KEY}  Concurrency: {concurrency}")
+    print(f"Per-worker requests: {per_worker}  Total: {per_worker * concurrency}")
+
+    results: list = []
+    t0 = time.monotonic()
+    limits = httpx.Limits(max_connections=concurrency * 2, max_keepalive_connections=concurrency)
+    async with httpx.AsyncClient(http2=False, limits=limits) as client:
+        tasks = [worker(client, k, per_worker, results)
+                 for _, k in keys for _ in range(USERS_PER_KEY)]
+        await asyncio.gather(*tasks)
+    total_time = time.monotonic() - t0
+
+    ok = [r for r in results if r.get("status") == 200]
+    bad = [r for r in results if r.get("status") != 200]
+    lat = sorted(r["latency"] for r in ok) or [0]
+    in_tok = sum(r.get("in_tokens", 0) for r in ok)
+    out_tok = sum(r.get("out_tokens", 0) for r in ok)
+
+    print("\n=== Results ===")
+    print(f"Total time:      {total_time:.2f}s")
+    print(f"Total requests:  {len(results)}")
+    print(f"Success:         {len(ok)} ({100*len(ok)/max(1,len(results)):.1f}%)")
+    print(f"Failures:        {len(bad)}")
+    print(f"RPS (success):   {len(ok)/total_time:.2f}")
+    print(f"Tokens in/out:   {in_tok}/{out_tok}  (total {in_tok+out_tok})")
+    print(f"Token RPS:       {(in_tok+out_tok)/total_time:.1f} tok/s")
+    if ok:
+        print(f"p50/p95/p99/max: {lat[len(lat)//2]*1000:.0f}/"
+              f"{lat[int(len(lat)*0.95)]*1000:.0f}/"
+              f"{lat[int(len(lat)*0.99)]*1000:.0f}/"
+              f"{lat[-1]*1000:.0f}ms")
+        print(f"Latency mean:    {statistics.mean(r['latency'] for r in ok)*1000:.0f}ms")
+
+    fail_codes: dict = {}
+    for f in bad:
+        c = f.get("status") or f.get("error", "unknown")
+        fail_codes[c] = fail_codes.get(c, 0) + 1
+    if fail_codes:
+        print(f"\nFailure breakdown: {fail_codes}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
