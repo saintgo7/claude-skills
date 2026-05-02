@@ -57,6 +57,7 @@ REGISTRY=(
   "bash-cli-best-practices|skill|bash 운영 CLI 작성 8 검증 패턴 (set -euo pipefail, sub-cmd, mv to _trash, SQL injection 방지)"
   "claude-code-skill-authoring|skill|Claude Code skill 작성 메타 가이드 (frontmatter, REGISTRY, install/uninstall, CI validation)"
   "deployment-checklist|skill|LLM/API 서비스 배포 전 체크리스트 7영역 56항목 (인증/보안/모니터링/스케일/문서/롤백/외부) — GEM-LLM 28일 운영 검증"
+  "korean-tech-blog-authoring|skill|한국어 기술 블로그/아티클 작성 6원칙 (격식체, 영문 식별자, 기술 용어, 코드 인용, 다이어그램, 구조)"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────
