@@ -1,0 +1,110 @@
+"""3계층 quota 검사 / 3-layer rate limit + quota service.
+
+계층:
+  1) RPM         — slowapi 가 라우트 데코레이터로 처리 (이 파일 밖)
+  2) Concurrent  — asyncio.Semaphore (worker-local), `concurrency_slot()`
+  3) Daily       — DB SUM(prompt+completion) >= today, `check_quota()`
+
+거부 시 reason code: rpm_limit | concurrent_limit | daily_token_limit
+"""
+from __future__ import annotations
+
+import asyncio
+from contextlib import asynccontextmanager
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+# TODO: 패키지 경로/모델명 프로젝트에 맞게 변경
+from gateway.metrics import gateway_quota_rejections_total
+from gateway.models import Quota, UsageLog
+
+
+@dataclass
+class QuotaSnapshot:
+    allowed: bool
+    reason: str | None  # rpm_limit | concurrent_limit | daily_token_limit | None
+    daily_tokens_used: int
+    daily_token_limit: int
+    rpm_used: int
+    rpm_limit: int
+
+
+_ALLOWED = {"rpm_limit", "concurrent_limit", "daily_token_limit"}
+
+
+def _record_rejection(reason: str) -> None:
+    """Prometheus 카운터 (cardinality 보호: 화이트리스트만)."""
+    if reason in _ALLOWED:
+        gateway_quota_rejections_total.labels(reason=reason).inc()
+
+
+# ── 계층 2: Concurrent (worker-local) ────────────────────────────────
+_semaphores: dict[str, tuple[int, asyncio.Semaphore]] = {}
+_sem_lock = asyncio.Lock()
+
+
+async def _get_semaphore(user_id: str, limit: int) -> asyncio.Semaphore:
+    """한도 변경 시 재생성하는 사용자별 Semaphore 캐시."""
+    async with _sem_lock:
+        cached = _semaphores.get(user_id)
+        if cached is None or cached[0] != limit:
+            sem = asyncio.Semaphore(limit)
+            _semaphores[user_id] = (limit, sem)
+            return sem
+        return cached[1]
+
+
+@asynccontextmanager
+async def concurrency_slot(user_id: str, limit: int):
+    """`async with concurrency_slot(uid, N): ...` — N 초과 시 acquire 대기."""
+    sem = await _get_semaphore(user_id, limit)
+    await sem.acquire()
+    try:
+        yield
+    finally:
+        sem.release()
+
+
+# ── 계층 3: Daily token + 보조 RPM (DB) ──────────────────────────────
+
+
+async def check_quota(
+    session: AsyncSession,
+    user_id: str,
+    estimated_tokens: int = 0,
+) -> QuotaSnapshot:
+    """daily/RPM 사전 검사. estimated_tokens 는 입력 토큰 추정값
+    (최소 prompt_chars/4) — 0 이면 정확히 한도 도달한 사용자 통과 결함."""
+    quota = await session.get(Quota, user_id)
+    if quota is None:
+        return QuotaSnapshot(True, None, 0, 10**9, 0, 10**6)
+
+    now = datetime.now(UTC)
+    day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    minute_ago = now - timedelta(seconds=60)
+
+    daily_total = await session.scalar(
+        select(func.coalesce(
+            func.sum(UsageLog.prompt_tokens + UsageLog.completion_tokens), 0
+        )).where(UsageLog.user_id == user_id, UsageLog.ts >= day_start)
+    ) or 0
+
+    rpm = await session.scalar(
+        select(func.count(UsageLog.id)).where(
+            UsageLog.user_id == user_id, UsageLog.ts >= minute_ago
+        )
+    ) or 0
+
+    if daily_total + estimated_tokens > quota.daily_token_limit:
+        _record_rejection("daily_token_limit")
+        return QuotaSnapshot(False, "daily_token_limit", daily_total,
+                             quota.daily_token_limit, rpm, quota.rpm_limit)
+    if rpm >= quota.rpm_limit:  # 멀티 워커에서 slowapi 누수 burst 보조
+        _record_rejection("rpm_limit")
+        return QuotaSnapshot(False, "rpm_limit", daily_total,
+                             quota.daily_token_limit, rpm, quota.rpm_limit)
+    return QuotaSnapshot(True, None, daily_total, quota.daily_token_limit,
+                         rpm, quota.rpm_limit)

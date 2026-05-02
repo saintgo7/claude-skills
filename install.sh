@@ -50,6 +50,7 @@ REGISTRY=(
   "llm-eval-multi-model|skill|여러 LLM 동시 평가/비교 (latency, throughput, 정확도, tool calling, 한국어 응답)"
   "postgres-migration-from-sqlite|skill|SQLite → PostgreSQL 마이그레이션 (FastAPI/SQLAlchemy/Alembic, 100+ 동접 production scaling)"
   "prometheus-fastapi-metrics|skill|FastAPI Prometheus 커스텀 메트릭 추가 (Counter/Histogram/Gauge 3계층, cardinality 제한, Grafana 시작)"
+  "quota-rate-limit-pattern|skill|API 게이트웨이 3계층 quota/rate-limit (slowapi RPM + asyncio.Semaphore + DB daily, 50동접 검증)"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────
