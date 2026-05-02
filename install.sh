@@ -55,8 +55,12 @@ REGISTRY=(
 find_entry() {
   local name="$1"
   for entry in "${REGISTRY[@]}"; do
-    [ "$(echo "$entry" | cut -d'|' -f1)" = "$name" ] && echo "$entry" && return
+    if [ "$(echo "$entry" | cut -d'|' -f1)" = "$name" ]; then
+      echo "$entry"
+      return 0
+    fi
   done
+  return 0  # not found — caller checks via [ -z "$entry" ] (set -e safe)
 }
 
 list_skills() {
@@ -105,15 +109,21 @@ install_skill() {
     sparse_clone "$name"
     dest="$SKILLS_DIR/$name"
     mkdir -p "$SKILLS_DIR"
-    rm -rf "$dest"
+    if [ -d "$dest" ]; then
+      echo "  (already installed — overwriting)"
+      rm -rf "$dest"
+    fi
     cp -r "$TMP_DIR/$name" "$dest"
     echo "✓ Installed → $dest"
 
   elif [ "$type" = "command" ]; then
     sparse_clone "commands"
     mkdir -p "$COMMANDS_DIR"
-    cp "$TMP_DIR/commands/${name}.md" "$COMMANDS_DIR/"
     dest="$COMMANDS_DIR/${name}.md"
+    if [ -f "$dest" ]; then
+      echo "  (already installed — overwriting)"
+    fi
+    cp "$TMP_DIR/commands/${name}.md" "$COMMANDS_DIR/"
     echo "✓ Installed → $dest"
   fi
 
