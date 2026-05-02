@@ -148,7 +148,9 @@ Bootstrapped via project-bootstrap skill." || echo "  (이미 commit 있음)"
 
 # ===== 6. GitHub (master 통해) =====
 echo "[6/8] GitHub repo 생성 + push"
-if ssh -o ConnectTimeout=5 master 'echo OK' >/dev/null 2>&1; then
+if [ "${SKIP_GITHUB:-0}" = "1" ]; then
+  echo "  ⏭️  SKIP_GITHUB=1 — skip"
+elif ssh -o ConnectTimeout=5 master 'echo OK' >/dev/null 2>&1; then
   ssh master "/home/jovyan/.local/bin/gh repo create saintgo7/$PROJECT --private --description '$PROJECT bootstrapped' 2>&1" | head -3 || true
   git branch -M main 2>/dev/null || true
   git remote remove origin 2>/dev/null || true
@@ -163,7 +165,9 @@ else
 fi
 
 # ===== 7. Cloudflare DNS =====
-if [ -n "$DOMAIN" ]; then
+if [ "${SKIP_CLOUDFLARE:-0}" = "1" ]; then
+  echo "[7/8] Cloudflare DNS — SKIP_CLOUDFLARE=1 — skip"
+elif [ -n "$DOMAIN" ]; then
   echo "[7/8] Cloudflare DNS ($DOMAIN)"
   N1_CONFIG=~/.cloudflared/config.yml
   if [ -f "$N1_CONFIG" ]; then
