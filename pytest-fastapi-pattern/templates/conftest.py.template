@@ -1,0 +1,83 @@
+"""pytest fixtures: in-memory DB + ASGITransport client + upstream mock helpers.
+
+핵심 순서:
+1. 환경변수 셋업 (앱 import 전에!)
+2. app_db — 매 테스트 create_all/drop_all
+3. client — ASGITransport + lifespan
+4. upstream 응답 빌더
+"""
+from __future__ import annotations
+
+import json
+import os
+from collections.abc import AsyncIterator
+
+import pytest
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+
+# ── 1) 환경변수 (앱 import 전!) ───────────────────────────────────────────────
+os.environ.setdefault("APP_ADMIN_KEY", "test_admin_key")
+os.environ.setdefault("APP_API_KEY_SALT", "test_salt_xxxxxxxxxxxxxxxxxxxxxxxx")
+os.environ.setdefault("APP_DB_URL", "sqlite+aiosqlite:///:memory:")
+os.environ.setdefault("APP_UPSTREAM_URL", "http://upstream.test")
+os.environ.setdefault("APP_LOG_LEVEL", "WARNING")
+
+# 지연 import — 환경변수 셋업 후에만
+from myapp import config as app_config  # noqa: E402
+from myapp.db import get_engine, reset_engine  # noqa: E402
+from myapp.models import Base  # noqa: E402
+
+app_config.get_settings.cache_clear()
+
+
+# ── 2) DB fixture (function scope = 매 테스트 격리) ──────────────────────────
+@pytest_asyncio.fixture
+async def app_db() -> AsyncIterator[None]:
+    """매 테스트마다 깨끗한 테이블."""
+    await reset_engine()
+    engine = get_engine()
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    await reset_engine()
+
+
+# ── 3) ASGITransport client (lifespan 포함) ──────────────────────────────────
+@pytest_asyncio.fixture
+async def client(app_db: None) -> AsyncIterator[AsyncClient]:
+    """in-process httpx async client.
+
+    httpx 0.27+ 는 lifespan="on" 으로 자동 startup/shutdown.
+    그 이전이면 ``asgi_lifespan.LifespanManager`` 로 감싸기.
+    """
+    from myapp.main import create_app
+
+    app = create_app()
+    transport = ASGITransport(app=app)  # httpx 0.27+: lifespan="on" 추가
+    async with AsyncClient(transport=transport, base_url="http://test") as c:
+        yield c
+
+
+# ── 4) 헬퍼 ──────────────────────────────────────────────────────────────────
+@pytest.fixture
+def admin_headers() -> dict[str, str]:
+    return {"X-Admin-Key": "test_admin_key"}
+
+
+@pytest_asyncio.fixture
+async def auth_headers(client: AsyncClient, admin_headers: dict[str, str]) -> dict[str, str]:
+    """API 키 발급 후 Bearer 헤더."""
+    user = (await client.post("/admin/users", headers=admin_headers,
+                              json={"username": "t", "email": "t@x"})).json()
+    key = (await client.post("/admin/keys", headers=admin_headers,
+                             json={"user_id": user["id"], "name": "k"})).json()
+    return {"Authorization": f"Bearer {key['raw_key']}"}
+
+
+def make_upstream_response(*, content: str = "ok") -> dict:
+    """upstream JSON 응답 빌더 (테스트 안에서 import)."""
+    return {"id": "x-1", "choices": [{"message": {"content": content}}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2}}

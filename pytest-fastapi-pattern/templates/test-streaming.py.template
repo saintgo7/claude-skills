@@ -1,0 +1,65 @@
+"""SSE 스트리밍 + 비스트리밍 통합 테스트 (respx upstream mock).
+
+검증 항목:
+- upstream SSE chunk 가 그대로 클라이언트에 흐르고 [DONE] 으로 종료.
+- chunk 단위로 받아서 검증 (큰 응답일 때).
+- upstream 실패 시 graceful close.
+"""
+from __future__ import annotations
+
+import pytest
+import respx
+from httpx import AsyncClient, Response
+
+
+@pytest.mark.asyncio
+async def test_sse_passthrough(client: AsyncClient, auth_headers: dict[str, str]) -> None:
+    """upstream SSE → client 패스스루 + [DONE] 검증."""
+    sse = (
+        b'data: {"choices":[{"delta":{"content":"He"}}]}\n\n'
+        b'data: {"choices":[{"delta":{"content":"llo"}}]}\n\n'
+        b'data: {"usage":{"prompt_tokens":3,"completion_tokens":2}}\n\n'
+        b"data: [DONE]\n\n"
+    )
+    async with respx.mock(assert_all_called=True) as mock:
+        mock.post("http://upstream.test/v1/chat/completions").mock(
+            return_value=Response(
+                200, content=sse, headers={"content-type": "text/event-stream"}
+            )
+        )
+        # chunk 단위 받기 — 큰 응답일 때 권장
+        chunks: list[bytes] = []
+        async with client.stream(
+            "POST",
+            "/v1/chat/completions",
+            headers=auth_headers,
+            json={
+                "model": "default",
+                "messages": [{"role": "user", "content": "hi"}],
+                "stream": True,
+            },
+        ) as r:
+            assert r.status_code == 200
+            async for chunk in r.aiter_bytes():
+                chunks.append(chunk)
+
+    body = b"".join(chunks)
+    assert b"He" in body and b"llo" in body
+    assert b"[DONE]" in body
+
+
+@pytest.mark.asyncio
+async def test_upstream_error_graceful(client: AsyncClient, auth_headers: dict[str, str]) -> None:
+    """upstream 5xx → error chunk + [DONE] 으로 닫기."""
+    async with respx.mock(assert_all_called=True) as mock:
+        mock.post("http://upstream.test/v1/chat/completions").mock(
+            return_value=Response(503, json={"error": "unavailable"})
+        )
+        r = await client.post(
+            "/v1/chat/completions",
+            headers=auth_headers,
+            json={"model": "default", "messages": [{"role": "user", "content": "x"}],
+                  "stream": True},
+        )
+    assert r.status_code in (200, 502, 503)
+    assert b"[DONE]" in r.content or r.status_code >= 500

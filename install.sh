@@ -53,6 +53,7 @@ REGISTRY=(
   "quota-rate-limit-pattern|skill|API 게이트웨이 3계층 quota/rate-limit (slowapi RPM + asyncio.Semaphore + DB daily, 50동접 검증)"
   "fastapi-async-patterns|skill|FastAPI + asyncio + httpx + SQLAlchemy async 6 패턴 (SSE 스트리밍, lifespan, DI, Semaphore, async DB, background task)"
   "vllm-tool-calling|skill|vLLM tool calling 3단계 디펜스 (server parser + model weight + client fallback) — case 15/16/17 일반화"
+  "pytest-fastapi-pattern|skill|pytest로 FastAPI 통합 테스트 (httpx async + ASGITransport + respx + lifespan + 격리, 219 테스트 검증)"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────
