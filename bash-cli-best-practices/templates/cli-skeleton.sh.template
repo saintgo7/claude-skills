@@ -1,0 +1,139 @@
+#!/usr/bin/env bash
+# <APP_NAME> CLI — 운영 자동화 스크립트
+# 사용: bash <SCRIPT> {start|stop|status|health|cleanup}
+#
+# 8 패턴 적용:
+#   1) set -euo pipefail
+#   2) sub-command dispatch (case)
+#   3) env > .env > default 우선순위
+#   4) mv to _trash (rm -rf 금지)
+#   5) Python heredoc + ? bind (SQL injection 방지)
+#   6) PID 파일 + kill -0 좀비 청소
+#   7) curl 헬스체크 폴링 (-m, -w, awk latency)
+#   8) setsid + nohup 분리 백그라운드
+
+set -euo pipefail
+
+# ── 1. 경로/환경변수 ─────────────────────────────────────────
+PROJECT_ROOT="${PROJECT_ROOT:-/home/jovyan/myapp}"
+LOG_DIR="${LOG_DIR:-$PROJECT_ROOT/_logs}"
+TRASH_DIR="${TRASH_DIR:-$PROJECT_ROOT/_trash}"
+SERVICE_URL="${SERVICE_URL:-http://localhost:8080}"
+SERVICE_DB="${SERVICE_DB:-$PROJECT_ROOT/_data/app.db}"
+
+mkdir -p "$LOG_DIR" "$TRASH_DIR"
+
+# .env 로드 (없으면 무시) — set -a 로 자식 프로세스 export
+if [ -f "$PROJECT_ROOT/.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$PROJECT_ROOT/.env"
+  set +a
+fi
+
+# ── 2. 헬퍼 ──────────────────────────────────────────────────
+now_ms() { date +%s.%N; }
+ms_diff() { awk -v a="$1" -v b="$2" 'BEGIN{printf "%.0f", (b-a)*1000}'; }
+
+probe() {
+  local url="$1" t0 t1 code
+  t0=$(now_ms)
+  code=$(curl -s -m 3 -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")
+  t1=$(now_ms)
+  echo "$code $(ms_diff "$t0" "$t1")"
+}
+
+trash() {
+  local target="$1"
+  [ -e "$target" ] || return 0
+  local ts="$(date +%Y%m%d-%H%M%S)"
+  mkdir -p "$TRASH_DIR/$ts"
+  mv "$target" "$TRASH_DIR/$ts/" 2>/dev/null || rm -rf "$target"
+}
+
+# ── 3. 서비스 start/stop ─────────────────────────────────────
+cmd_start() {
+  local pidfile="$LOG_DIR/app.pid"
+  local logfile="$LOG_DIR/app.log"
+  if [ -f "$pidfile" ] && kill -0 "$(cat "$pidfile")" 2>/dev/null; then
+    echo "  이미 실행 중 (PID $(cat "$pidfile"))"
+    return
+  fi
+  [ -f "$pidfile" ] && trash "$pidfile"
+
+  echo "  시작..."
+  setsid nohup bash -c "exec my-app --port 8080" \
+    > "$logfile" 2>&1 < /dev/null &
+  echo $! > "$pidfile"
+
+  # 헬스체크 폴링 (5분)
+  for _ in $(seq 1 30); do
+    sleep 10
+    read -r code _ < <(probe "$SERVICE_URL/healthz")
+    [ "$code" = "200" ] && { echo "  🟢 ready"; return; }
+  done
+  echo "  🔴 헬스체크 실패"; exit 1
+}
+
+cmd_stop() {
+  local pidfile="$LOG_DIR/app.pid"
+  [ -f "$pidfile" ] || { echo "  PID 파일 없음"; return; }
+  local pid; pid=$(cat "$pidfile")
+  if kill -0 "$pid" 2>/dev/null; then
+    kill -TERM -- "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
+    sleep 3
+    kill -KILL -- "-$pid" 2>/dev/null || true
+  fi
+  trash "$pidfile"
+  echo "  정지 완료"
+}
+
+cmd_status() {
+  read -r code lat < <(probe "$SERVICE_URL/healthz")
+  [ "$code" = "200" ] && echo "  🟢 $code (${lat}ms)" || echo "  🔴 $code"
+}
+
+# ── 4. DB 조회 (prepared statement) ──────────────────────────
+cmd_user_info() {
+  local user_id="${1:-}"
+  [ -z "$user_id" ] && { echo "ERROR: user_id 필수" >&2; exit 1; }
+  SERVICE_DB="$SERVICE_DB" USER_ID="$user_id" python3 - <<'PYEOF'
+import os, sqlite3, sys
+conn = sqlite3.connect(os.environ["SERVICE_DB"])
+cur = conn.execute(
+    "SELECT id, name, plan FROM users WHERE id = ?",
+    (os.environ["USER_ID"],),
+)
+row = cur.fetchone()
+conn.close()
+if not row:
+    print(f"user_id='{os.environ['USER_ID']}' 없음", file=sys.stderr)
+    sys.exit(2)
+print(*row, sep="\t")
+PYEOF
+}
+
+# ── 5. 청소 ──────────────────────────────────────────────────
+cmd_cleanup() {
+  echo "  _trash 30일 이상 정리..."
+  find "$TRASH_DIR" -mindepth 1 -maxdepth 1 -mtime +30 -exec rm -rf {} +
+}
+
+# ── 6. dispatcher ────────────────────────────────────────────
+case "${1:-help}" in
+  start)     shift; cmd_start "$@" ;;
+  stop)      cmd_stop ;;
+  status)    cmd_status ;;
+  user-info) shift; cmd_user_info "$@" ;;
+  cleanup)   cmd_cleanup ;;
+  help|*)
+    cat <<EOF
+사용: $0 {start|stop|status|user-info <id>|cleanup}
+
+환경변수:
+  PROJECT_ROOT  (기본: /home/jovyan/myapp)
+  SERVICE_URL   (기본: http://localhost:8080)
+  SERVICE_DB    (기본: \$PROJECT_ROOT/_data/app.db)
+EOF
+    ;;
+esac

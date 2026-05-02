@@ -54,6 +54,7 @@ REGISTRY=(
   "fastapi-async-patterns|skill|FastAPI + asyncio + httpx + SQLAlchemy async 6 패턴 (SSE 스트리밍, lifespan, DI, Semaphore, async DB, background task)"
   "vllm-tool-calling|skill|vLLM tool calling 3단계 디펜스 (server parser + model weight + client fallback) — case 15/16/17 일반화"
   "pytest-fastapi-pattern|skill|pytest로 FastAPI 통합 테스트 (httpx async + ASGITransport + respx + lifespan + 격리, 219 테스트 검증)"
+  "bash-cli-best-practices|skill|bash 운영 CLI 작성 8 검증 패턴 (set -euo pipefail, sub-cmd, mv to _trash, SQL injection 방지)"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────
