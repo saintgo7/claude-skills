@@ -9,6 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (현재 main 브랜치에 머지되었으나 아직 태깅되지 않은 변경사항이 여기에 누적됩니다.)
 
+## [0.5.0] - 2026-05-02
+
+[`38cff97`] docs: add missing README.md for bilingual-book-authoring skill
+[`e959472`] fix(install): show ERROR for unknown skill, warn on duplicate install
+[`5af72df`] feat: postgres-migration-from-sqlite skill (case 14 long-term fix)
+[`046f44b`] feat: prometheus-fastapi-metrics skill (Counter/Histogram/Gauge 3-위치 패턴)
+[`5bb29cc`] feat: quota-rate-limit-pattern skill (3-layer rate limiting)
+
+### Added
+- `prometheus-fastapi-metrics` skill — FastAPI 애플리케이션 Prometheus 커스텀 메트릭 패턴
+  (Counter / Histogram / Gauge 3종, 미들웨어 + 핸들러 + 백그라운드 3-위치 패턴,
+  default registry 충돌 회피, label cardinality 가이드, Grafana 대시보드 예시;
+  GEM-LLM gateway 6 메트릭 — requests, tokens, latency 검증)
+- `quota-rate-limit-pattern` skill — 3-layer rate limiting (per-key RPM / daily / monthly)
+  (slowapi + 자체 미들웨어 조합, 429 응답 표준 헤더 `Retry-After` / `X-RateLimit-*`,
+  fail-open vs fail-closed, SQLite/Redis 백엔드 비교, 분산 환경 권장사항)
+- `postgres-migration-from-sqlite` skill — SQLite → PostgreSQL 장기 마이그레이션 가이드
+  (case 14 SQLite write-lock 200 동접 한계 후속 처리, alembic 스키마 이관,
+  connection pool 튜닝 차이, JSONB / `INSERT ... ON CONFLICT` 패턴, 백업/롤백 전략)
+
+### Changed
+- `install.sh` REGISTRY 29 entries (28 skills + 1 command) — 신규 3개 추가
+
+### Fixed
+- `install.sh` silent failure — 알려지지 않은 skill 이름 인자에 대해 조용히 종료하던 문제
+  → `ERROR: unknown skill '<name>'` 메시지 표시 후 exit 1, 이미 설치된 skill에 대해서는 warn
+- `bilingual-book-authoring` skill에 `README.md` 누락 → GitHub 폴더 진입 시 빈 화면이던 것을
+  설명 + 사용 트리거 + SKILL.md 링크가 포함된 README로 교체
+
 ## [0.4.0] - 2026-05-02
 
 [`5447aea`] feat: 3 new skills (vllm-bootstrap, bilingual-book-authoring, k8s-pod-autostart) + 22 READMEs
@@ -118,7 +147,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - GitHub에서 선택한 skill만 다운로드 (전체 repo clone 불필요)
   - `./install.sh --list` 로 사용 가능한 skill 목록 표시
 
-[Unreleased]: https://github.com/USER/claude-skills/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/USER/claude-skills/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/USER/claude-skills/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/USER/claude-skills/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/USER/claude-skills/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/USER/claude-skills/compare/v0.2.0...v0.2.1
