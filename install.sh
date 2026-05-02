@@ -58,6 +58,8 @@ REGISTRY=(
   "claude-code-skill-authoring|skill|Claude Code skill 작성 메타 가이드 (frontmatter, REGISTRY, install/uninstall, CI validation)"
   "deployment-checklist|skill|LLM/API 서비스 배포 전 체크리스트 7영역 56항목 (인증/보안/모니터링/스케일/문서/롤백/외부) — GEM-LLM 28일 운영 검증"
   "korean-tech-blog-authoring|skill|한국어 기술 블로그/아티클 작성 6원칙 (격식체, 영문 식별자, 기술 용어, 코드 인용, 다이어그램, 구조)"
+  "dependency-vulnerability-fix|skill|pip-audit 취약점 안전 fix 4단계 (스캔→분류→patch 업그레이드→회귀) — vLLM/PyTorch 보호"
+  "observability-bundle|skill|FastAPI 통합 관측성 (Prometheus + Loki + OpenTelemetry + Sentry, 3 pillar 통합)"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────
