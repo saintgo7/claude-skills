@@ -1,0 +1,121 @@
+name: Validate skills
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Validate SKILL.md frontmatter
+        run: |
+          python3 << 'EOF'
+          import yaml
+          import sys
+          from pathlib import Path
+
+          errors = []
+          skill_count = 0
+
+          for skill_md in sorted(Path('.').glob('*/SKILL.md')):
+              skill_count += 1
+              text = skill_md.read_text()
+
+              if not text.startswith('---'):
+                  errors.append(f"{skill_md}: missing YAML frontmatter")
+                  continue
+
+              end = text.find('---', 3)
+              if end < 0:
+                  errors.append(f"{skill_md}: unclosed YAML frontmatter")
+                  continue
+
+              try:
+                  fm = yaml.safe_load(text[3:end])
+              except yaml.YAMLError as e:
+                  errors.append(f"{skill_md}: YAML parse error: {str(e)[:100]}")
+                  continue
+
+              if not isinstance(fm, dict):
+                  errors.append(f"{skill_md}: frontmatter must be a mapping")
+                  continue
+
+              name = fm.get('name', '')
+              desc = fm.get('description', '')
+
+              if not name:
+                  errors.append(f"{skill_md}: missing 'name'")
+              if not desc:
+                  errors.append(f"{skill_md}: missing 'description'")
+              if len(desc) > 1024:
+                  errors.append(f"{skill_md}: description too long ({len(desc)} > 1024)")
+              if len(name) > 64:
+                  errors.append(f"{skill_md}: name too long ({len(name)} > 64)")
+
+              dir_name = skill_md.parent.name
+              if name and name != dir_name:
+                  errors.append(f"{skill_md}: name '{name}' != directory '{dir_name}'")
+
+          if errors:
+              print(f"❌ {len(errors)} errors in {skill_count} skills:")
+              for e in errors:
+                  print(f"  {e}")
+              sys.exit(1)
+          else:
+              print(f"✅ All {skill_count} skills validated")
+          EOF
+
+      - name: Validate install.sh REGISTRY
+        run: |
+          # install.sh REGISTRY와 디렉토리 존재 일치 확인
+          bash << 'EOF'
+          set -e
+
+          # REGISTRY 추출
+          mapfile -t entries < <(grep -E '^\s*"[^"]+\|' install.sh | sed 's/^\s*"//; s/".*$//')
+
+          errors=0
+          for entry in "${entries[@]}"; do
+            name=$(echo "$entry" | cut -d'|' -f1)
+            type=$(echo "$entry" | cut -d'|' -f2)
+
+            if [ "$type" = "skill" ]; then
+              if [ ! -d "$name" ] || [ ! -f "$name/SKILL.md" ]; then
+                echo "❌ Skill '$name' missing directory or SKILL.md"
+                errors=$((errors+1))
+              fi
+            elif [ "$type" = "command" ]; then
+              if [ ! -f "commands/${name}.md" ]; then
+                echo "❌ Command '$name' missing commands/${name}.md"
+                errors=$((errors+1))
+              fi
+            fi
+          done
+
+          if [ "$errors" -eq 0 ]; then
+            echo "✅ All ${#entries[@]} REGISTRY entries valid"
+          else
+            exit 1
+          fi
+          EOF
+
+      - name: Bash syntax check
+        run: |
+          bash -n install.sh
+          for sh in $(find . -name "*.sh" -not -path "./.git/*"); do
+            bash -n "$sh" || { echo "❌ Syntax error in $sh"; exit 1; }
+          done
+          echo "✅ All shell scripts syntactically valid"

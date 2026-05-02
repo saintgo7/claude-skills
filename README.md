@@ -10,6 +10,7 @@ Curated collection of Claude Code skills — bilingual research/code projects, L
 |-------|------|-------------|
 | [`project-bootstrap`](project-bootstrap/) | skill | bilingual research/code 프로젝트 한 번에 부트스트랩 (GitHub + Cloudflare + 한/영 책 + 한/영 논문 + Pandoc 빌드 파이프라인) |
 | [`pandoc-bilingual-build`](pandoc-bilingual-build/) | skill | 기존 프로젝트에 한/영 Pandoc 빌드 파이프라인 추가 (project-bootstrap의 빌드만 분리) |
+| [`multi-agent-orchestrator`](multi-agent-orchestrator/) | skill | 대량 작업 (책 ~1000p, 코드 ~12K LOC) 8+ 에이전트 병렬 디스패치 패턴 |
 | [`exam-system`](exam-system/) | skill | 온라인 시험 운영 플레이북 (모니터링·대응·사후 통계) |
 | [`searcam-book`](commands/) | command | SearCam 기술 서적 챕터 작성 슬래시 커맨드 |
 | [`gem-llm-overview`](gem-llm-overview/) | skill | GEM-LLM 시스템 전체 구조 + 다른 skill 라우팅 |
