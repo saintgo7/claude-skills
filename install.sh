@@ -25,6 +25,7 @@ REGISTRY=(
   "exam-system|skill|온라인 시험 운영 플레이북 (모니터링·대응·사후 통계)"
   "searcam-book|command|SearCam 기술 서적 챕터 작성 슬래시 커맨드"
   "project-bootstrap|skill|bilingual research/code 프로젝트 한 번에 부트스트랩 (GitHub + Cloudflare + 한/영 책 + 한/영 논문 + Pandoc)"
+  "pandoc-bilingual-build|skill|기존 프로젝트에 한/영 Pandoc + XeTeX 빌드 파이프라인 추가 (project-bootstrap의 빌드 부분만)"
   "gem-llm-overview|skill|GEM-LLM 시스템 전체 구조 + 다른 gem-llm-* skill 라우팅"
   "gem-llm-supervisor|skill|GEM-LLM 전체 스택 start/stop/status/restart"
   "gem-llm-admin-cli|skill|GEM-LLM 사용자/API key 관리"
