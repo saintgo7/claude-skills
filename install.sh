@@ -60,6 +60,7 @@ REGISTRY=(
   "korean-tech-blog-authoring|skill|한국어 기술 블로그/아티클 작성 6원칙 (격식체, 영문 식별자, 기술 용어, 코드 인용, 다이어그램, 구조)"
   "dependency-vulnerability-fix|skill|pip-audit 취약점 안전 fix 4단계 (스캔→분류→patch 업그레이드→회귀) — vLLM/PyTorch 보호"
   "observability-bundle|skill|FastAPI 통합 관측성 (Prometheus + Loki + OpenTelemetry + Sentry, 3 pillar 통합)"
+  "env-isolation-pattern|skill|운영 환경변수 → 테스트 누설 방지 (case 18 일반화) — explicit unset + unconditional override + container isolation"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────

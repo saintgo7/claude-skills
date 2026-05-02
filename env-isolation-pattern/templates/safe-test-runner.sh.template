@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# safe-test-runner.sh — 운영 env 명시적 unset 후 pytest 호출.
+#
+# 사용:
+#   ./safe-test-runner.sh tests/integration
+#   ./safe-test-runner.sh -k test_admin
+#
+# 핵심 — `env -u K` 는 자식 프로세스 환경에서 K 를 제거한 채 명령 실행.
+# 부모 셸의 .env 가 export 되어 있어도 자식 pytest 에는 안 들어간다.
+
+set -euo pipefail
+
+# ── 1. 격리할 prod 환경변수 목록 ──────────────────────────────────────
+# 프로젝트의 모든 secret prefix 변수를 나열. 새 변수 추가 시 여기도 갱신.
+PROD_VARS=(
+  GATEWAY_DB_URL
+  GATEWAY_ADMIN_KEY
+  GATEWAY_API_KEY_SALT
+  DATABASE_URL
+  # 프로젝트 추가:
+  # APP_DB_URL APP_SECRET_KEY
+)
+
+# ── 2. env -u 인자 구성 ───────────────────────────────────────────────
+unset_args=()
+for var in "${PROD_VARS[@]}"; do
+  unset_args+=(-u "$var")
+done
+
+# ── 3. 테스트용 값 명시 (선택) ────────────────────────────────────────
+# unset 만으로 부족한 경우, 테스트 전용 값을 inject.
+export GATEWAY_DB_URL="sqlite+aiosqlite:///:memory:"
+export GATEWAY_ADMIN_KEY="test_admin_key"
+export GATEWAY_API_KEY_SALT="test_salt"
+
+# ── 4. 누설 검증 — fail-fast ─────────────────────────────────────────
+# 자식 pytest 에 들어가는 환경에서 prod 값이 남아있으면 거부.
+leaked=$(env "${unset_args[@]}" bash -c 'env' \
+  | grep -E "^(GATEWAY_|ADMIN_)" \
+  | grep -vE "(=test|:memory:)" || true)
+if [ -n "$leaked" ]; then
+  echo "ERROR: prod env leaked into test environment:" >&2
+  echo "$leaked" >&2
+  exit 1
+fi
+
+# ── 5. pytest 실행 ────────────────────────────────────────────────────
+exec env "${unset_args[@]}" pytest "$@"

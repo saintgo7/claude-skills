@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (현재 main 브랜치에 머지되었으나 아직 태깅되지 않은 변경사항이 여기에 누적됩니다.)
 
+## [0.7.1] - 2026-05-02
+
+### Added
+- `env-isolation-pattern` skill — 운영/테스트 환경변수 격리 패턴
+  (GEM-LLM **case 18 일반화** — `validate-all.sh`가 부모 supervisor에서 상속한
+  `GATEWAY_DB_URL` 환경변수를 통해 pytest가 운영 SQLite를 wipe한 사고에서 도출;
+  `setdefault`는 약한 방어 — 강한 방어 2가지: (1) 자식 프로세스 진입 직전에
+  `env -u VAR1 -u VAR2 ...` 로 운영 변수 명시적 unset, (2) test `conftest.py`에서
+  `os.environ["VAR"] = "in-memory"` 무조건 덮어쓰기;
+  백업 자동화는 사고 회복의 마지막 안전망 — 케이스 13의 `backup-db.sh` 자동화가
+  케이스 18 사고 비용을 0으로 만든 실증;
+  destructive 작업(테스트, 마이그레이션, 정리) 표준 격리 체크리스트,
+  `set -a; source .env; set +a` 위험성, supervisor + 자식 pytest 환경 분리 패턴)
+
+### Changed
+- `install.sh` REGISTRY **39 → 40 entries** (39 skills + 1 command) — 신규 1개 추가
+
 ## [0.7.0] - 2026-05-02
 
 [`9290bc3`] feat: observability-bundle skill (Prometheus + Loki + OTel + Sentry 3 pillar 통합)
@@ -200,7 +217,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - GitHub에서 선택한 skill만 다운로드 (전체 repo clone 불필요)
   - `./install.sh --list` 로 사용 가능한 skill 목록 표시
 
-[Unreleased]: https://github.com/USER/claude-skills/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/USER/claude-skills/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/USER/claude-skills/compare/v0.7.0...v0.7.1
+[0.7.0]: https://github.com/USER/claude-skills/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/USER/claude-skills/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/USER/claude-skills/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/USER/claude-skills/compare/v0.3.0...v0.4.0

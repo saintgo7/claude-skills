@@ -1,0 +1,36 @@
+"""테스트 환경 격리 — 운영 환경변수 무조건 덮기.
+
+conftest.py 최상단에 둘 것 — 다른 import 보다 먼저 실행되어야
+앱 코드가 환경변수를 읽기 전에 격리가 끝난다.
+
+setdefault(...) 는 약한 방어 (이미 설정된 값 무시).
+직접 할당 + 명시적 unset 으로 강한 방어.
+"""
+import os
+
+# ── 1. prod prefix 로 들어온 환경변수 모두 제거 ───────────────────────
+# 프로젝트 prefix 에 맞게 교체. secret 으로 다루는 prefix 는 모두 포함.
+PROD_PREFIXES = (
+    "GATEWAY_",
+    "ADMIN_",
+    "DATABASE_URL",
+    # 프로젝트 추가:
+    # "APP_", "PROD_", "MYSERVICE_",
+)
+
+for k in list(os.environ):
+    if k.startswith(PROD_PREFIXES):
+        del os.environ[k]
+
+# ── 2. 테스트용 값 명시적 설정 ────────────────────────────────────────
+# setdefault 가 아니라 직접 할당 — 부모 환경 무시.
+os.environ["GATEWAY_DB_URL"] = "sqlite+aiosqlite:///:memory:"
+os.environ["GATEWAY_ADMIN_KEY"] = "test_admin_key"
+os.environ["GATEWAY_API_KEY_SALT"] = "test_salt"
+
+# ── 3. 누설 검증 (선택) ───────────────────────────────────────────────
+# 격리 후에도 prod-like 값이 남았으면 fail-fast.
+_db_url = os.environ.get("GATEWAY_DB_URL", "")
+assert ":memory:" in _db_url or "test" in _db_url, (
+    f"GATEWAY_DB_URL leaked prod value: {_db_url!r}"
+)
