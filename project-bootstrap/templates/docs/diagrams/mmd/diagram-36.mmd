@@ -1,0 +1,7 @@
+flowchart LR
+  vLLM --> Prom[Prometheus]
+  GW --> Prom
+  DCGM[DCGM] --> Prom
+  Prom --> Graf[Grafana]
+  Prom --> AM[Alertmanager]
+  AM --> Slack

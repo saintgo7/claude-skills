@@ -1,0 +1,5 @@
+flowchart LR
+  Q[Query] --> EMB[Embed]
+  EMB --> VDB[(Vector DB)]
+  VDB --> CTX[Context]
+  CTX --> GEN[LLM]

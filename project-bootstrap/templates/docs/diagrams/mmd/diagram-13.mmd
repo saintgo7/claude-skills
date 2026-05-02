@@ -1,0 +1,8 @@
+flowchart LR
+  H[Authorization: Bearer xxx] --> P[Parse]
+  P --> HASH[bcrypt compare]
+  HASH -->|match| SCOPE[Scope check]
+  HASH -->|miss| R401[401]
+  SCOPE -->|ok| RATE[Rate limit]
+  RATE -->|ok| OK[200]
+  RATE -->|exceed| R429[429]

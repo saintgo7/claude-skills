@@ -1,0 +1,6 @@
+flowchart LR
+  S[start] --> ENV[load env]
+  ENV --> WEIGHTS[mount GPFS weights]
+  WEIGHTS --> ARGS[build vllm args TP=4]
+  ARGS --> RUN[python -m vllm.entrypoints.openai.api_server]
+  RUN --> READY[/health 200/]

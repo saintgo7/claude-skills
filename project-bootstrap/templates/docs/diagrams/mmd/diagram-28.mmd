@@ -1,0 +1,6 @@
+flowchart LR
+  ADMIN[Admin] --> DRAIN[Drain traffic for model]
+  DRAIN --> KILL[SIGTERM vLLM]
+  KILL --> START[start new]
+  START --> WARM[warm-up]
+  WARM --> RESUME[resume routing]

@@ -1,0 +1,5 @@
+/* Mermaid SVG styling for KO/EN labels. */
+text, tspan, .label, .nodeLabel, .edgeLabel {
+  font-family: "Noto Sans KR", "Noto Sans CJK KR", "Apple SD Gothic Neo",
+               "Malgun Gothic", "Arial", sans-serif !important;
+}

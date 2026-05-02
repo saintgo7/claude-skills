@@ -1,0 +1,5 @@
+flowchart LR
+  Internet --> Tunnel[Cloudflare Tunnel]
+  Tunnel --> Pod[K8s Pod]
+  Pod --- GPFS[(GPFS / models)]
+  Pod --- DB[(PostgreSQL)]

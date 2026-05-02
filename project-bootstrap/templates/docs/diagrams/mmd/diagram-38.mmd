@@ -1,0 +1,7 @@
+sequenceDiagram
+  participant Prom
+  participant AM as Alertmanager
+  participant Slack
+  Prom->>AM: rule fired (p95>2s 5m)
+  AM->>Slack: webhook payload
+  Slack-->>OnCall: notify

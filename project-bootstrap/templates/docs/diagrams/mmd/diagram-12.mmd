@@ -1,0 +1,15 @@
+sequenceDiagram
+  participant U as User
+  participant CLI
+  participant G as Gateway
+  participant V as vLLM
+  U->>CLI: prompt
+  CLI->>G: chat (tools)
+  G->>V: forward
+  V-->>G: tool_call(read,...)
+  G-->>CLI: tool_call
+  CLI->>CLI: run read
+  CLI->>G: tool_result
+  G->>V: continue
+  V-->>G: final
+  G-->>CLI: final

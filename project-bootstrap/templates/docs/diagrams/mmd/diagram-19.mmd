@@ -1,0 +1,6 @@
+flowchart LR
+  S[start] --> ENV[load env]
+  ENV --> WEIGHTS[mount GPFS]
+  WEIGHTS --> ARGS[args: TP=4 enable-expert-parallel]
+  ARGS --> RUN[vllm serve]
+  RUN --> READY[/health 200/]

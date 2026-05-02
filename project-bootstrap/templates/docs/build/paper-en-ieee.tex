@@ -1,0 +1,78 @@
+% paper-en-ieee.tex — IEEE-style paper template (article fallback).
+%
+% NOTE: IEEEtran.cls (TeX Live: texlive-publishers) is not installed in this
+% environment. We fall back to a single-column article layout that preserves
+% Pandoc compatibility; replace the documentclass with `IEEEtran` and restore
+% the \IEEEauthorblock* commands once the package is available.
+\documentclass[10pt,a4paper]{article}
+\usepackage[a4paper,margin=2.0cm]{geometry}
+
+% --- Pandoc-compatibility shims -----------------------------------------
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\passthrough}[1]{#1}
+\providecommand{\pandocbounded}[1]{#1}
+% Stubs for IEEEtran-specific macros; harmless on article class.
+\providecommand{\IEEEauthorblockN}[1]{#1}
+\providecommand{\IEEEauthorblockA}[1]{\\\small\textit{#1}}
+
+\usepackage{fontspec}
+\setmainfont{DejaVu Serif}
+\setmonofont{DejaVu Sans Mono}
+\usepackage{polyglossia}
+\setdefaultlanguage{english}
+
+\usepackage{cite}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{calc}
+\usepackage{etoolbox}
+\usepackage{fancyvrb}
+\usepackage{framed}
+\usepackage{microtype}
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  frame=single,
+  framerule=0.3pt,
+}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+
+$for(header-includes)$
+$header-includes$
+$endfor$
+
+\title{$title$}
+
+\author{$for(author)$$author$$sep$ \and $endfor$\\\\\small\textit{TODO: Affiliation, City, Country (corresponding@example.org)}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+$if(abstract)$$abstract$$else$TODO: abstract.$endif$
+\end{abstract}
+
+\noindent\textbf{Index Terms:}
+$if(keywords)$$for(keywords)$$keywords$$sep$, $endfor$$else$LLM, coding assistant, multi-tenant$endif$\par
+\vspace{0.5em}
+
+$body$
+
+% IEEEtran.bst not installed; fall back to plain.
+\bibliographystyle{plain}
+$if(bibliography)$
+\bibliography{$for(bibliography)$$bibliography$$sep$,$endfor$}
+$else$
+% TODO(placeholder): point to docs/paper-en/references.bib once authored.
+$endif$
+
+\end{document}

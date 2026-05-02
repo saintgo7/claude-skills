@@ -1,0 +1,12 @@
+sequenceDiagram
+  participant C as Client
+  participant G as Gateway
+  participant V as vLLM
+  C->>G: stream=true
+  G->>V: stream req
+  loop chunks
+    V-->>G: data: {delta}
+    G-->>C: data: {delta}
+  end
+  V-->>G: data: [DONE]
+  G-->>C: data: [DONE]

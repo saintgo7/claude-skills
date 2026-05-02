@@ -1,0 +1,6 @@
+erDiagram
+  USER ||--o{ APIKEY : owns
+  USER ||--o{ CONVERSATION : has
+  CONVERSATION ||--o{ MESSAGE : contains
+  USER ||--o{ USAGELOG : generates
+  APIKEY ||--o{ USAGELOG : tagged

@@ -1,0 +1,10 @@
+sequenceDiagram
+  participant C as CLI
+  participant G as Gateway
+  participant V as vLLM
+  C->>G: POST /v1/chat/completions (Bearer key)
+  G->>G: AuthN/AuthZ + admission(50)
+  G->>V: forward (HTTP)
+  V-->>G: SSE chunks
+  G-->>C: SSE chunks
+  G->>G: write UsageLog (async)

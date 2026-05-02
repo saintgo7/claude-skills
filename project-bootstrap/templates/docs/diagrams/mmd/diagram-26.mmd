@@ -1,0 +1,11 @@
+sequenceDiagram
+  participant U as Client
+  participant E as CF Edge
+  participant CFD as cloudflared
+  participant GW as Gateway
+  U->>E: HTTPS llm.pamout.com
+  E->>CFD: outbound tunnel
+  CFD->>GW: localhost:8080
+  GW-->>CFD: response
+  CFD-->>E: response
+  E-->>U: response

@@ -1,0 +1,11 @@
+sequenceDiagram
+  participant U
+  participant CLI
+  participant TR as ToolRunner
+  participant FS as Filesystem
+  U->>CLI: ask edit file
+  CLI->>TR: edit(path,old,new)
+  TR->>FS: read+write
+  FS-->>TR: ok
+  TR-->>CLI: result
+  CLI-->>U: render

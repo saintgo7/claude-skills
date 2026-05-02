@@ -1,0 +1,6 @@
+flowchart LR
+  PROMPT --> HOOK1[pre-prompt hook]
+  HOOK1 --> LLM
+  LLM --> TOOLS[Skills/MCP]
+  TOOLS --> HOOK2[post-tool hook]
+  HOOK2 --> OUT

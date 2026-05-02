@@ -1,0 +1,8 @@
+flowchart LR
+  CLI[CLI] --> GW[Gateway]
+  AUI[Admin UI] --> GW
+  GW --> AUTH[Auth Service]
+  GW --> VD[vLLM Dense]
+  GW --> VM[vLLM MoE]
+  AUTH --> DB[(DB)]
+  GW --> DB

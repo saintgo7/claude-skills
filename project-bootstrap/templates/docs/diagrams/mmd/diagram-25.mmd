@@ -1,0 +1,6 @@
+flowchart LR
+  Dev[Engineer] -->|kubectl apply| K8s
+  K8s --> Pod
+  Pod --> CFD[cloudflared]
+  CFD --> CFEdge[CF Edge]
+  CFEdge --> Internet

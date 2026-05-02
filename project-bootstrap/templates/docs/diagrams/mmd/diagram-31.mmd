@@ -1,0 +1,7 @@
+flowchart LR
+  IN[/cmd args/] --> P[Parse]
+  P --> D{which?}
+  D -->|/help| H[print help]
+  D -->|/model| M[switch]
+  D -->|/login| L[browser flow]
+  D -->|other| O[exec]

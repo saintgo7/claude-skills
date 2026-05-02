@@ -1,0 +1,95 @@
+% book-en.tex — Pandoc XeLaTeX template for the English GEM-LLM book.
+\documentclass[$if(fontsize)$$fontsize$,$endif$$if(papersize)$$papersize$paper,$endif$openany]{$if(documentclass)$$documentclass$$else$book$endif$}
+
+\usepackage{geometry}
+$if(geometry)$
+\geometry{$for(geometry)$$geometry$$sep$,$endfor$}
+$else$
+\geometry{a4paper,margin=2.5cm}
+$endif$
+
+\usepackage{fontspec}
+\setmainfont{$if(mainfont)$$mainfont$$else$DejaVu Serif$endif$}
+\setsansfont{$if(sansfont)$$sansfont$$else$DejaVu Sans$endif$}
+\setmonofont{$if(monofont)$$monofont$$else$DejaVu Sans Mono$endif$}
+
+\usepackage{polyglossia}
+\setdefaultlanguage{english}
+
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{caption}
+% Pandoc-emitted environments and macros require these:
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{calc}
+\usepackage{etoolbox}
+\usepackage{fancyvrb}
+\usepackage{framed}
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\passthrough}[1]{#1}
+\providecommand{\pandocbounded}[1]{#1}
+\captionsetup{font=small,labelfont=bf}
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  frame=single,
+  framerule=0.4pt,
+  rulecolor=\color{black!30},
+}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=$if(linkcolor)$$linkcolor$$else$NavyBlue$endif$,
+  urlcolor=$if(urlcolor)$$urlcolor$$else$NavyBlue$endif$,
+  citecolor=$if(citecolor)$$citecolor$$else$NavyBlue$endif$,
+  pdftitle={$title$},
+  pdfauthor={$for(author)$$author$$sep$, $endfor$},
+  pdflang={$lang$}
+}
+
+$if(numbersections)$
+\setcounter{secnumdepth}{3}
+$endif$
+
+$for(header-includes)$
+$header-includes$
+$endfor$
+
+\title{$title$$if(subtitle)$\\\large $subtitle$$endif$}
+\author{$for(author)$$author$$sep$ \and $endfor$}
+\date{$date$}
+
+% Provide an abstract environment for `book` class (which lacks one by default).
+\makeatletter
+\@ifundefined{abstract}{
+  \providecommand{\abstractname}{Abstract}
+  \newenvironment{abstract}{\small\begin{quote}\noindent\textbf{\abstractname.}\quad}{\end{quote}\normalsize}
+}{}
+\makeatother
+
+\begin{document}
+\maketitle
+
+$if(abstract)$
+\begin{abstract}
+$abstract$
+\end{abstract}
+$endif$
+
+$if(toc)$
+\tableofcontents
+\clearpage
+$endif$
+
+$body$
+
+\end{document}

@@ -1,0 +1,8 @@
+flowchart TB
+  subgraph Node[8 x B200 Node]
+    G0((GPU0)) --- G1((GPU1)) --- G2((GPU2)) --- G3((GPU3))
+    G4((GPU4)) --- G5((GPU5)) --- G6((GPU6)) --- G7((GPU7))
+    G0 -. NVLink .- G4
+  end
+  CPU[CPU 288 vCPU] --- Node
+  RAM[2.2 TB RAM] --- CPU

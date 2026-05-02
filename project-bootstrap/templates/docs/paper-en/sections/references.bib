@@ -1,0 +1,172 @@
+% =====================================================================
+% GEM-LLM English IEEE conference paper -- BibTeX references
+%
+% Verification status:
+%   verified    -- author / title / year / venue confirmed against the
+%                  primary source
+%   placeholder -- partial information; re-verify before camera-ready
+% Cite keys are intentionally aligned with the Korean companion paper
+% so a single .bib file may be shared if Pandoc citeproc is used in
+% multilingual mode.
+% =====================================================================
+
+% ---- vLLM / PagedAttention ------------------------------------------
+% verified: SOSP 2023, Kwon et al.
+@inproceedings{Kwon23,
+  author    = {Kwon, Woosuk and Li, Zhuohan and Zhuang, Siyuan and
+               Sheng, Ying and Zheng, Lianmin and Yu, Cody Hao and
+               Gonzalez, Joseph E. and Zhang, Hao and Stoica, Ion},
+  title     = {Efficient Memory Management for Large Language Model
+               Serving with {PagedAttention}},
+  booktitle = {Proceedings of the 29th Symposium on Operating Systems
+               Principles (SOSP '23)},
+  year      = {2023},
+  address   = {Koblenz, Germany},
+  doi       = {10.1145/3600006.3613165}
+}
+
+% ---- Mixtral of Experts ---------------------------------------------
+% verified: arXiv 2401.04088
+@misc{Jiang24,
+  author       = {Jiang, Albert Q. and Sablayrolles, Alexandre and
+                  Roux, Antoine and Mensch, Arthur and Savary, Blanche
+                  and Bamford, Chris and Chaplot, Devendra Singh and
+                  others},
+  title        = {Mixtral of Experts},
+  howpublished = {arXiv preprint arXiv:2401.04088},
+  year         = {2024},
+  url          = {https://arxiv.org/abs/2401.04088}
+}
+
+% ---- Llama 3 herd (Meta 2024) ---------------------------------------
+% verified: arXiv 2407.21783
+@misc{Llama3,
+  author       = {{Meta AI}},
+  title        = {The {Llama} 3 Herd of Models},
+  howpublished = {arXiv preprint arXiv:2407.21783},
+  year         = {2024},
+  url          = {https://arxiv.org/abs/2407.21783}
+}
+
+% ---- GPT-4 (OpenAI 2023) --------------------------------------------
+% verified: arXiv 2303.08774
+@misc{GPT4,
+  author       = {{OpenAI}},
+  title        = {{GPT-4} Technical Report},
+  howpublished = {arXiv preprint arXiv:2303.08774},
+  year         = {2023},
+  url          = {https://arxiv.org/abs/2303.08774}
+}
+
+% ---- Sparsely-gated MoE foundational paper (Shazeer 2017) -----------
+% verified: ICLR 2017, arXiv 1701.06538
+@inproceedings{Shazeer17,
+  author    = {Shazeer, Noam and Mirhoseini, Azalia and Maziarz, Krzysztof
+               and Davis, Andy and Le, Quoc and Hinton, Geoffrey and
+               Dean, Jeff},
+  title     = {Outrageously Large Neural Networks: The Sparsely-Gated
+               Mixture-of-Experts Layer},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2017},
+  url       = {https://arxiv.org/abs/1701.06538}
+}
+
+% ---- OpenAI Chat Completions / Tool Calling -------------------------
+% placeholder: vendor documentation page; URL form may shift
+@misc{OpenAI24,
+  author       = {{OpenAI}},
+  title        = {{OpenAI} {API} Reference --- {Chat Completions} and {Tool Calling}},
+  howpublished = {\url{https://platform.openai.com/docs/api-reference/chat}},
+  year         = {2024},
+  note         = {Accessed 2026-05-02. \% TODO: verify URL stability before camera-ready}
+}
+
+% ---- Anthropic Claude / Claude Code (client-side tool execution) ----
+% placeholder: vendor documentation, anchor URL
+@misc{Anthropic25,
+  author       = {{Anthropic}},
+  title        = {{Claude Code}: Documentation},
+  howpublished = {\url{https://docs.claude.com/en/docs/claude-code}},
+  year         = {2025},
+  note         = {Accessed 2026-05-02. \% TODO: verify URL stability before camera-ready}
+}
+
+% ---- LiteLLM gateway -----------------------------------------------
+% placeholder: GitHub release as canonical citation
+@misc{LiteLLM24,
+  author       = {{BerriAI / LiteLLM contributors}},
+  title        = {{LiteLLM}: Call All {LLM} APIs Using {OpenAI} Format},
+  howpublished = {\url{https://github.com/BerriAI/litellm}},
+  year         = {2024},
+  note         = {Accessed 2026-05-02. \% TODO: pin to release tag before camera-ready}
+}
+
+% ---- FastAPI -------------------------------------------------------
+% placeholder: official documentation
+@misc{FastAPI,
+  author       = {Ram\'{i}rez, Sebasti\'{a}n},
+  title        = {{FastAPI}: Modern, Fast Web Framework for Building APIs with {Python}},
+  howpublished = {\url{https://fastapi.tiangolo.com}},
+  year         = {2024},
+  note         = {Accessed 2026-05-02. \% TODO: confirm preferred citation form}
+}
+
+% ---- Hugging Face TGI ----------------------------------------------
+% placeholder: GitHub release as canonical citation
+@misc{HF-TGI24,
+  author       = {{Hugging Face}},
+  title        = {Text Generation Inference ({TGI})},
+  howpublished = {\url{https://github.com/huggingface/text-generation-inference}},
+  year         = {2024},
+  note         = {Accessed 2026-05-02. \% TODO: pin to release tag}
+}
+
+% ---- NVIDIA TensorRT-LLM -------------------------------------------
+% placeholder: GitHub release as canonical citation
+@misc{NVIDIA24,
+  author       = {{NVIDIA}},
+  title        = {{TensorRT-LLM}: Optimized Inference for Large Language Models},
+  howpublished = {\url{https://github.com/NVIDIA/TensorRT-LLM}},
+  year         = {2024},
+  note         = {Accessed 2026-05-02. \% TODO: pin to release tag}
+}
+
+% ---- SGLang --------------------------------------------------------
+% verified: NeurIPS 2024
+@inproceedings{Zheng24,
+  author    = {Zheng, Lianmin and Yin, Liangsheng and Xie, Zhiqiang and
+               Sun, Chuyue and Huang, Jeff and Yu, Cody Hao and others},
+  title     = {{SGLang}: Efficient Execution of Structured Language
+               Model Programs},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2024}
+}
+
+% ---- Pandoc --------------------------------------------------------
+% placeholder: software citation, vendor URL
+@misc{Pandoc,
+  author       = {MacFarlane, John},
+  title        = {{Pandoc}: A Universal Document Converter},
+  howpublished = {\url{https://pandoc.org}},
+  year         = {2024},
+  note         = {Accessed 2026-05-02. \% TODO: confirm preferred citation form}
+}
+
+% ---- Cloudflare Tunnel ---------------------------------------------
+% placeholder: vendor documentation
+@misc{Cloudflare25,
+  author       = {{Cloudflare}},
+  title        = {{Cloudflare Tunnel} Documentation},
+  howpublished = {\url{https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/}},
+  year         = {2025},
+  note         = {Accessed 2026-05-02. \% TODO: verify URL stability}
+}
+
+% =====================================================================
+% End of references.bib (14 entries; 6 verified, 8 placeholder).
+% Camera-ready submission checklist:
+%   [ ] Replace every "TODO: verify" marker with a stable citation form
+%   [ ] Confirm URLs still resolve as of submission date
+%   [ ] Convert vendor documentation citations to formal reports where
+%       a stable archival form (DOI, technical report number) exists
+% =====================================================================

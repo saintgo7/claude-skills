@@ -1,0 +1,8 @@
+sequenceDiagram
+  participant CLI
+  participant G as Gateway
+  CLI->>G: stream req
+  loop chunks
+    G-->>CLI: delta
+    CLI->>CLI: append + repaint markdown
+  end

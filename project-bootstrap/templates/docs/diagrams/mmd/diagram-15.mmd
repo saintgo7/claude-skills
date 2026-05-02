@@ -1,0 +1,8 @@
+flowchart LR
+  REQ --> COOKIE{Cookie?}
+  COOKIE -->|yes| SESS[Session lookup]
+  COOKIE -->|no| BEARER{Bearer?}
+  BEARER -->|yes| KEY[Key verify]
+  BEARER -->|no| R401[401]
+  SESS --> CTX[User Context]
+  KEY --> CTX

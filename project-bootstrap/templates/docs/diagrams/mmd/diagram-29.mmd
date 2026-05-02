@@ -1,0 +1,4 @@
+flowchart LR
+  S[gemcli chat] --> LOAD[load credentials]
+  LOAD --> PING[/v1/models/]
+  PING --> REPL[REPL ready]

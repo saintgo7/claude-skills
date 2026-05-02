@@ -1,0 +1,7 @@
+flowchart LR
+  REQ[Request] --> AUTHM[Auth MW]
+  AUTHM --> RT[Router]
+  RT --> SEM[Semaphore=50]
+  SEM --> UP[Upstream Client]
+  UP --> RES[SSE Encoder]
+  RES --> OUT[Response]

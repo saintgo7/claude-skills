@@ -1,0 +1,7 @@
+flowchart LR
+  U[Users / CLI / SDK] -->|HTTPS| CT[Cloudflare Tunnel]
+  CT --> GW[FastAPI Gateway]
+  GW -->|model=dense| VD[vLLM Dense 32B]
+  GW -->|model=moe| VM[vLLM MoE 30B-A3B]
+  GW --> DB[(PostgreSQL)]
+  GW --> AL[(Audit Log)]

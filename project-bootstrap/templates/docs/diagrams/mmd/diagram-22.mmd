@@ -1,0 +1,4 @@
+flowchart LR
+  IN[Insert] --> P[(usagelog_yyyy_mm)]
+  P --> AGG[Daily rollup]
+  AGG --> DASH[Grafana]

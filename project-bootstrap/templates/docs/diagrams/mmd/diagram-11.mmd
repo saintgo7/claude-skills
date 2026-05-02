@@ -1,0 +1,8 @@
+sequenceDiagram
+  participant C
+  participant G as Gateway
+  participant V as vLLM
+  C->>G: POST /v1/embeddings
+  G->>V: forward
+  V-->>G: vector
+  G-->>C: 200 OK

@@ -1,0 +1,10 @@
+classDiagram
+  class Role { name }
+  class Permission { action resource }
+  Role <|-- Admin
+  Role <|-- User
+  Role <|-- Readonly
+  Admin : +manage_users
+  Admin : +manage_keys
+  User  : +chat
+  Readonly : +view_usage

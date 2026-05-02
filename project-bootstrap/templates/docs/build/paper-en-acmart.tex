@@ -1,0 +1,76 @@
+% paper-en-acmart.tex — ACM acmart sigconf template (Pandoc-compatible).
+%
+% Requires the acmart document class (TeX Live: texlive-publishers).
+\documentclass[sigconf,nonacm,review=false]{acmart}
+
+% Pandoc-compatibility shims.
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\passthrough}[1]{#1}
+
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  frame=single,
+  framerule=0.3pt,
+}
+
+% --- ACM metadata --------------------------------------------------------
+% TODO(placeholder): fill these in once submission target is known.
+\acmConference[GEM-LLM '26]{TBD Conference}{2026}{TBD}
+\acmYear{2026}
+\copyrightyear{2026}
+\setcopyright{none}
+
+$for(header-includes)$
+$header-includes$
+$endfor$
+
+\title{$title$}
+$if(subtitle)$\subtitle{$subtitle$}$endif$
+
+$for(author)$
+\author{$author$}
+\affiliation{%
+  \institution{TODO: Institution}%
+  \city{TODO}%
+  \country{TODO}%
+}
+\email{TODO@example.org}
+$endfor$
+
+\begin{document}
+
+\begin{abstract}
+$if(abstract)$$abstract$$else$TODO: abstract.$endif$
+\end{abstract}
+
+% TODO(placeholder): real CCS concepts.
+\begin{CCSXML}
+<ccs2012>
+  <concept>
+    <concept_id>10010147.10010178.10010179</concept_id>
+    <concept_desc>Computing methodologies~Natural language generation</concept_desc>
+    <concept_significance>500</concept_significance>
+  </concept>
+</ccs2012>
+\end{CCSXML}
+\ccsdesc[500]{Computing methodologies~Natural language generation}
+
+\keywords{$if(keywords)$$for(keywords)$$keywords$$sep$, $endfor$$else$LLM, coding assistant, multi-tenant$endif$}
+
+\maketitle
+
+$body$
+
+$if(bibliography)$
+\bibliography{$for(bibliography)$$bibliography$$sep$,$endfor$}
+$else$
+% TODO(placeholder): point to docs/paper-en/references.bib.
+% \bibliography{docs/paper-en/references}
+$endif$
+
+\end{document}

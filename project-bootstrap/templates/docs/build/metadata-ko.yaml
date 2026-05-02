@@ -1,0 +1,43 @@
+---
+# Common metadata for Korean GEM-LLM documents.
+# Per-target front-matter (subtitle, document class, etc.) may override these.
+
+title: "GEM-LLM: Gemma 4 멀티유저 코딩 어시스턴트 시스템"
+subtitle: "단일 노드 8×B200에서 50명 동시 접속 코딩 어시스턴트 구축"
+author:
+  - "GEM-LLM 프로젝트"
+date: "\\today"
+lang: ko-KR
+documentclass: book
+papersize: a4
+fontsize: 11pt
+linestretch: 1.4
+numbersections: true
+toc: true
+toc-depth: 3
+links-as-notes: false
+colorlinks: true
+linkcolor: NavyBlue
+urlcolor: NavyBlue
+citecolor: NavyBlue
+mainfont: "Noto Sans KR"
+sansfont: "Noto Sans KR"
+monofont: "DejaVu Sans Mono"
+CJKmainfont: "Noto Sans KR"
+geometry:
+  - a4paper
+  - margin=2.5cm
+header-includes:
+  - \usepackage{microtype}
+# xeCJK omitted: not installed in current TeX Live tree. Korean glyphs are
+# rendered via fontspec + Noto Sans KR; line breaking is best-effort.
+keywords:
+  - LLM
+  - Gemma
+  - 코딩 어시스턴트
+  - 멀티 테넌트
+  - vLLM
+abstract: |
+  본 문서는 단일 8×B200 노드에서 50명 규모의 동시 접속을 지원하는
+  코딩 어시스턴트 GEM-LLM 의 설계, 구축, 운영을 다룬다.
+...

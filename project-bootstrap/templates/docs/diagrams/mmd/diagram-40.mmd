@@ -1,0 +1,9 @@
+flowchart TB
+  ROOT[5xx spike]
+  ROOT --> A[Tunnel down?]
+  ROOT --> B[vLLM down?]
+  ROOT --> C[DB down?]
+  B --> B1[GPU OOM]
+  B --> B2[Weights missing]
+  A --> A1[restart cloudflared]
+  C --> C1[connection pool]

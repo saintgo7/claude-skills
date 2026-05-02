@@ -1,0 +1,39 @@
+---
+# Common metadata for English GEM-LLM documents.
+
+title: "GEM-LLM: A Multi-User Coding Assistant on Gemma 4"
+subtitle: "Serving 50 Concurrent Developers on a Single 8×B200 Node"
+author:
+  - "GEM-LLM Project"
+date: "\\today"
+lang: en-US
+documentclass: book
+papersize: a4
+fontsize: 11pt
+linestretch: 1.35
+numbersections: true
+toc: true
+toc-depth: 3
+colorlinks: true
+linkcolor: NavyBlue
+urlcolor: NavyBlue
+citecolor: NavyBlue
+mainfont: "DejaVu Serif"
+sansfont: "DejaVu Sans"
+monofont: "DejaVu Sans Mono"
+geometry:
+  - a4paper
+  - margin=2.5cm
+header-includes:
+  - \usepackage{microtype}
+keywords:
+  - LLM
+  - Gemma
+  - coding assistant
+  - multi-tenant
+  - vLLM
+abstract: |
+  This document describes the design, deployment, and operation of GEM-LLM,
+  a coding assistant supporting 50 concurrent developers on a single
+  8×B200 node.
+...

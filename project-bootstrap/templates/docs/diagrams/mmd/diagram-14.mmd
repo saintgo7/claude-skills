@@ -1,0 +1,15 @@
+sequenceDiagram
+  participant U as User
+  participant W as WebUI
+  participant G as Gateway
+  participant GG as Google
+  U->>W: login
+  W->>GG: redirect (auth code)
+  GG-->>U: consent
+  U->>GG: approve
+  GG-->>W: code
+  W->>G: code
+  G->>GG: token exchange
+  GG-->>G: id_token
+  G->>G: verify (JWKS, aud, iss)
+  G-->>W: session cookie

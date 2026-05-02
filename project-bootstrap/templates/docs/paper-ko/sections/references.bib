@@ -1,0 +1,172 @@
+% =====================================================================
+% GEM-LLM 한국어 논문 (KCI) 참고문헌
+% 영문 IEEE 논문과 공유 가능 (cite key 동일)
+%
+% 검증 상태:
+%   verified  — 저자/제목/연도/매체가 공식 자료로 확인됨
+%   placeholder — 일부 정보가 미확인. 실제 게재 전 재검증 필요.
+% =====================================================================
+
+% ---- vLLM / PagedAttention -----------------------------------------
+% verified: SOSP 2023, Kwon et al.
+@inproceedings{Kwon23,
+  author    = {Kwon, Woosuk and Li, Zhuohan and Zhuang, Siyuan and
+               Sheng, Ying and Zheng, Lianmin and Yu, Cody Hao and
+               Gonzalez, Joseph E. and Zhang, Hao and Stoica, Ion},
+  title     = {Efficient Memory Management for Large Language Model
+               Serving with {PagedAttention}},
+  booktitle = {Proceedings of the 29th Symposium on Operating Systems
+               Principles (SOSP '23)},
+  year      = {2023},
+  address   = {Koblenz, Germany},
+  doi       = {10.1145/3600006.3613165}
+}
+
+% ---- Mixtral of Experts --------------------------------------------
+% verified: arXiv 2401.04088
+@misc{Jiang24,
+  author       = {Jiang, Albert Q. and Sablayrolles, Alexandre and
+                  Roux, Antoine and Mensch, Arthur and Savary, Blanche
+                  and Bamford, Chris and Chaplot, Devendra Singh and
+                  others},
+  title        = {Mixtral of Experts},
+  howpublished = {arXiv preprint arXiv:2401.04088},
+  year         = {2024},
+  url          = {https://arxiv.org/abs/2401.04088}
+}
+
+% ---- Switch Transformer (MoE) --------------------------------------
+% verified: JMLR 23(120), 2022
+@article{Fedus22,
+  author  = {Fedus, William and Zoph, Barret and Shazeer, Noam},
+  title   = {{Switch Transformers}: Scaling to Trillion Parameter
+             Models with Simple and Efficient Sparsity},
+  journal = {Journal of Machine Learning Research},
+  volume  = {23},
+  number  = {120},
+  pages   = {1--39},
+  year    = {2022}
+}
+
+% ---- Sparsely-gated MoE (early MoE foundations) --------------------
+% verified: arXiv 1701.06538, ICLR 2017
+@inproceedings{Shazeer17,
+  author    = {Shazeer, Noam and Mirhoseini, Azalia and Maziarz, Krzysztof
+               and Davis, Andy and Le, Quoc and Hinton, Geoffrey and
+               Dean, Jeff},
+  title     = {Outrageously Large Neural Networks: The Sparsely-Gated
+               Mixture-of-Experts Layer},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2017}
+}
+
+% ---- Llama 3 family -------------------------------------------------
+% verified: arXiv 2407.21783 (The Llama 3 Herd of Models)
+@misc{Llama3,
+  author       = {{Meta AI}},
+  title        = {The {Llama} 3 Herd of Models},
+  howpublished = {arXiv preprint arXiv:2407.21783},
+  year         = {2024},
+  url          = {https://arxiv.org/abs/2407.21783}
+}
+
+% ---- GPT-4 ----------------------------------------------------------
+% verified: arXiv 2303.08774
+@misc{GPT4,
+  author       = {{OpenAI}},
+  title        = {{GPT-4} Technical Report},
+  howpublished = {arXiv preprint arXiv:2303.08774},
+  year         = {2023},
+  url          = {https://arxiv.org/abs/2303.08774}
+}
+
+% ---- OpenAI Chat Completions API (industry-standard schema) --------
+% placeholder URL — 접속 시점 본문 형식이 변할 수 있음
+@misc{OpenAI24,
+  author       = {{OpenAI}},
+  title        = {{OpenAI} {API} Reference --- {Chat Completions}},
+  howpublished = {\url{https://platform.openai.com/docs/api-reference/chat}},
+  year         = {2024},
+  note         = {Accessed 2026-05-02}
+}
+
+% ---- Anthropic Claude Code (client-side tool execution model) -------
+% placeholder — official documentation cited as web resource
+@misc{Anthropic25,
+  author       = {{Anthropic}},
+  title        = {{Claude Code}: Documentation},
+  howpublished = {\url{https://docs.claude.com/en/docs/claude-code}},
+  year         = {2025},
+  note         = {Accessed 2026-05-02}
+}
+
+% ---- Gemma open models (predecessors of Gemma 4) -------------------
+% verified: Gemma technical report, 2024
+@techreport{Gemma24,
+  author      = {{Google DeepMind}},
+  title       = {{Gemma}: Open Models Based on {Gemini} Research and Technology},
+  institution = {Google DeepMind},
+  year        = {2024},
+  url         = {https://arxiv.org/abs/2403.08295}
+}
+
+% ---- Hugging Face TGI ----------------------------------------------
+% placeholder — GitHub release as canonical citation
+@misc{HF-TGI24,
+  author       = {{Hugging Face}},
+  title        = {Text Generation Inference ({TGI})},
+  howpublished = {\url{https://github.com/huggingface/text-generation-inference}},
+  year         = {2024},
+  note         = {Accessed 2026-05-02}
+}
+
+% ---- NVIDIA TensorRT-LLM -------------------------------------------
+% placeholder — GitHub release as canonical citation
+@misc{NVIDIA24,
+  author       = {{NVIDIA}},
+  title        = {{TensorRT-LLM}: Optimized Inference for Large Language Models},
+  howpublished = {\url{https://github.com/NVIDIA/TensorRT-LLM}},
+  year         = {2024},
+  note         = {Accessed 2026-05-02}
+}
+
+% ---- SGLang --------------------------------------------------------
+% verified: NeurIPS 2024
+@inproceedings{Zheng24,
+  author    = {Zheng, Lianmin and Yin, Liangsheng and Xie, Zhiqiang and
+               Sun, Chuyue and Huang, Jeff and Yu, Cody Hao and others},
+  title     = {{SGLang}: Efficient Execution of Structured Language
+               Model Programs},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2024}
+}
+
+% ---- LiteLLM (OpenAI-compatible multi-backend gateway) -------------
+% placeholder — GitHub release as canonical citation
+@misc{LiteLLM24,
+  author       = {{BerriAI / LiteLLM contributors}},
+  title        = {{LiteLLM}: Call All {LLM} APIs Using {OpenAI} Format},
+  howpublished = {\url{https://github.com/BerriAI/litellm}},
+  year         = {2024},
+  note         = {Accessed 2026-05-02}
+}
+
+% ---- FastAPI -------------------------------------------------------
+% placeholder — official documentation cited as web resource
+@misc{FastAPI,
+  author       = {Ram\'{i}rez, Sebasti\'{a}n},
+  title        = {{FastAPI}: Modern, Fast Web Framework for Building APIs with {Python}},
+  howpublished = {\url{https://fastapi.tiangolo.com}},
+  year         = {2024},
+  note         = {Accessed 2026-05-02}
+}
+
+% ---- Cloudflare Tunnel ---------------------------------------------
+% placeholder — vendor documentation
+@misc{Cloudflare25,
+  author       = {{Cloudflare}},
+  title        = {{Cloudflare Tunnel} Documentation},
+  howpublished = {\url{https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/}},
+  year         = {2025},
+  note         = {Accessed 2026-05-02}
+}

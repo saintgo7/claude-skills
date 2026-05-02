@@ -1,0 +1,112 @@
+% paper-ko-kci.tex — KCI-friendly Korean conference / journal paper template.
+%
+% NOTE: KCI does not provide a single canonical .cls file; each society
+% (KIISE, KIPS, KIBME, ...) ships its own. This template targets a generic
+% two-column "article" layout that satisfies KCI submission guidelines for
+% double-blind / camera-ready PDFs. Replace the documentclass and
+% \society* commands with a society-specific .cls when one is supplied.
+% Note: KCI camera-ready is two-column, but Pandoc-emitted longtable cannot
+% live in two-column mode. Use single column for the build; convert to
+% two-column at submission time with the society's .cls.
+\documentclass[10pt,a4paper]{article}
+
+% --- Geometry: KCI-typical 2.5cm margins, 1cm gutter ---------------------
+\usepackage[a4paper,margin=2.0cm,columnsep=0.7cm]{geometry}
+
+% --- XeLaTeX + CJK --------------------------------------------------------
+% NOTE: xeCJK omitted (not installed). Variable Noto Sans KR pinned by file
+% to avoid fontspec auto-discovery breakage with the multi-axis TTF.
+\usepackage{fontspec}
+\setmainfont{Noto Sans KR}[Path=/home/jovyan/.fonts/, UprightFont=NotoSansKR-Regular.ttf]
+\setsansfont{Noto Sans KR}[Path=/home/jovyan/.fonts/, UprightFont=NotoSansKR-Regular.ttf]
+\setmonofont{$if(monofont)$$monofont$$else$DejaVu Sans Mono$endif$}
+\usepackage{polyglossia}
+\setdefaultlanguage{english}
+\XeTeXlinebreaklocale "ko"
+\XeTeXlinebreakskip = 0pt plus 1pt
+
+% --- Typography ----------------------------------------------------------
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{caption}
+% Pandoc-emitted environments and macros require these:
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{calc}
+\usepackage{etoolbox}
+\usepackage{fancyvrb}
+\usepackage{framed}
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\passthrough}[1]{#1}
+\providecommand{\pandocbounded}[1]{#1}
+\captionsetup{font=small,labelfont=bf,labelsep=period}
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  frame=single,
+  framerule=0.3pt,
+}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{abstract}
+\renewcommand{\abstractnamefont}{\normalfont\bfseries}
+\renewcommand{\abstracttextfont}{\normalfont\small\itshape}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=NavyBlue,urlcolor=NavyBlue,citecolor=NavyBlue}
+
+% --- Bibliography (ACM/IEEE-compatible numeric style) --------------------
+\usepackage[numbers,sort&compress]{natbib}
+% IEEEtran.bst not installed; fall back to plainnat which ships with natbib.
+\bibliographystyle{plainnat}
+
+% --- KCI-style title block placeholders ----------------------------------
+% TODO(placeholder): replace with the society-specific commands when known.
+\newcommand{\kcitypeKO}{원저}                    % 논문 종별 (원저/단신/논평/...)
+\newcommand{\kcitypeEN}{Original Article}
+
+% Pandoc populates these via metadata. Default placeholders below.
+\title{$title$}
+\author{
+  $for(author)$$author$$sep$ \and $endfor$ \\
+  \small \textit{TODO: 소속 / Affiliation} \\
+  \small \texttt{TODO: corresponding@example.org}
+}
+\date{$date$}
+
+% Header-includes hook (used by Pandoc).
+$for(header-includes)$
+$header-includes$
+$endfor$
+
+\begin{document}
+
+\maketitle
+\begin{abstract}
+  \noindent\textbf{초록.} $if(abstract-ko)$$abstract-ko$$else$$abstract$$endif$
+
+  \medskip
+  \noindent\textbf{Abstract.} $if(abstract-en)$$abstract-en$$else$TODO: English abstract.$endif$
+
+  \medskip
+  \noindent\textbf{주제어 / Keywords:}
+  $if(keywords)$$for(keywords)$$keywords$$sep$, $endfor$$endif$
+\end{abstract}
+\vspace{1em}
+
+$body$
+
+% --- References ----------------------------------------------------------
+$if(bibliography)$
+\bibliography{$for(bibliography)$$bibliography$$sep$,$endfor$}
+$else$
+% TODO(placeholder): point to docs/paper-ko/references.bib once authored.
+% \bibliography{docs/paper-ko/references}
+$endif$
+
+\end{document}
