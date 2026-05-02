@@ -1,0 +1,35 @@
+"""표준 FastAPI lifespan — startup 자원 생성 + shutdown 정리.
+
+원칙:
+  - 모듈 top-level 에서 AsyncClient/engine 생성 금지 (이벤트 루프 없음)
+  - 모든 자원은 lifespan 안에서 만들고 yield 다음에 close
+  - `app.state.*` 에 저장 → 라우트에서 `request.app.state.http` 로 접근
+"""
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+
+import httpx
+from fastapi import FastAPI
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+DB_URL = "postgresql+asyncpg://user:pw@localhost/app"  # TODO
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # ── startup ──
+    app.state.http = httpx.AsyncClient(timeout=30.0)
+    app.state.engine = create_async_engine(
+        DB_URL, pool_size=20, max_overflow=40, pool_pre_ping=True,
+    )
+    app.state.session_factory = async_sessionmaker(
+        app.state.engine, expire_on_commit=False,
+    )
+    yield
+    # ── shutdown ──
+    await app.state.http.aclose()
+    await app.state.engine.dispose()
+
+
+app = FastAPI(lifespan=lifespan)
