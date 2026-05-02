@@ -27,6 +27,7 @@ REGISTRY=(
   "project-bootstrap|skill|bilingual research/code 프로젝트 한 번에 부트스트랩 (GitHub + Cloudflare + 한/영 책 + 한/영 논문 + Pandoc)"
   "pandoc-bilingual-build|skill|기존 프로젝트에 한/영 Pandoc + XeTeX 빌드 파이프라인 추가 (project-bootstrap의 빌드 부분만)"
   "multi-agent-orchestrator|skill|Claude Code 8+ 에이전트 병렬 디스패치 패턴 (책 1000p, 코드 12K LOC 검증)"
+  "cloudflare-tunnel-setup|skill|Cloudflare Tunnel 처음부터 셋업 (도메인 → 로컬 HTTPS 노출, SSH ProxyCommand 포함)"
   "gem-llm-overview|skill|GEM-LLM 시스템 전체 구조 + 다른 gem-llm-* skill 라우팅"
   "gem-llm-supervisor|skill|GEM-LLM 전체 스택 start/stop/status/restart"
   "gem-llm-admin-cli|skill|GEM-LLM 사용자/API key 관리"
@@ -41,6 +42,8 @@ REGISTRY=(
   "gem-llm-build-docs|skill|Pandoc + LaTeX 빌드 (책/매뉴얼/논문)"
   "gem-llm-review-prompt|skill|프롬프트 리뷰 가이드"
   "gem-llm-debug-mcp|skill|MCP 서버 디버깅"
+  "sqlite-wal-safe-ops|skill|SQLite WAL 모드 운영 함정 회피 (disk I/O error 방지, 안전한 백업, journal_mode 선택)"
+  "fastapi-gateway-pattern|skill|FastAPI OpenAI 호환 LLM 게이트웨이 구축 패턴 (인증/quota/스트리밍/SQLAlchemy pool)"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────

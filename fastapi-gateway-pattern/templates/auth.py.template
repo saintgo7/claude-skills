@@ -1,0 +1,112 @@
+"""API key 인증 / Bearer token authentication.
+
+Template: OpenAI 호환 게이트웨이의 인증 미들웨어 스켈레톤.
+
+키 형식 (권장): `<prefix>_<32hex>`
+  - 예: `app_live_a3f2c8e1b4d5...`
+  - prefix: 환경 식별 + 발급 주체 (`live`/`test`/서비스 이름 조합 가능)
+  - 32hex = 128bit, 무차별 대입 방어 충분
+  - DB에는 raw 키 저장 X — `key_hash = SHA256(salt || raw)` 만 보관
+  - 빠른 lookup용으로 raw 의 앞 N자 (예: 16자) 를 `key_prefix` 컬럼에 인덱스 + 정확 일치
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from fastapi import HTTPException, Request, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+# TODO: 패키지/모델 경로를 프로젝트에 맞게 변경
+from gateway.models import ApiKey, User
+from gateway.utils.crypto import lookup_hash, verify_api_key
+from gateway.utils.ids import KEY_PREFIX  # 예: "app_live_"
+
+
+@dataclass
+class AuthContext:
+    """검증된 사용자 컨텍스트. 라우트에서 Depends로 받는다."""
+    user: User
+    api_key: ApiKey
+
+
+def _unauthorized(message: str) -> HTTPException:
+    """OpenAI 형식의 401 에러 통일 헬퍼."""
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail={
+            "error": {
+                "message": message,
+                "type": "invalid_request_error",
+                "code": "invalid_api_key",
+            }
+        },
+    )
+
+
+def extract_bearer(request: Request) -> str:
+    """Authorization 헤더에서 Bearer 토큰 추출. 없거나 형식 불일치 → 401."""
+    auth = request.headers.get("authorization") or request.headers.get("Authorization")
+    if not auth or not auth.lower().startswith("bearer "):
+        raise _unauthorized("Missing Authorization header")
+    token = auth.split(" ", 1)[1].strip()
+    if not token.startswith(KEY_PREFIX):
+        raise _unauthorized("API key format invalid")
+    return token
+
+
+async def authenticate(session: AsyncSession, request: Request) -> AuthContext:
+    """헤더 기반 인증.
+
+    1. Bearer 추출 + 형식 검사
+    2. SHA256(salt || raw) → DB lookup (revoked=False)
+    3. timing-safe verify
+    4. user.disabled 검사
+    5. AuthContext 반환
+    """
+    raw = extract_bearer(request)
+    digest = lookup_hash(raw)
+    stmt = (
+        select(ApiKey, User)
+        .join(User, ApiKey.user_id == User.id)
+        .where(ApiKey.key_hash == digest, ApiKey.revoked.is_(False))
+    )
+    result = await session.execute(stmt)
+    row = result.first()
+    if row is None or not verify_api_key(raw, row[0].key_hash):
+        raise _unauthorized("Invalid API key")
+    api_key, user = row
+    if user.disabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "error": {
+                    "message": "User disabled",
+                    "type": "invalid_request_error",
+                    "code": "user_disabled",
+                }
+            },
+        )
+    return AuthContext(user=user, api_key=api_key)
+
+
+def require_admin(request: Request) -> None:
+    """`X-Admin-Key` 헤더가 환경변수 ADMIN_KEY와 일치하는지 검사.
+    DB lookup 없이 환경변수 직접 비교 — 부트스트랩 채널.
+    """
+    # TODO: 패키지 경로 변경
+    from gateway.config import get_settings
+
+    settings = get_settings()
+    provided = request.headers.get("x-admin-key") or request.headers.get("X-Admin-Key")
+    if not provided or provided != settings.admin_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={
+                "error": {
+                    "message": "Admin key required",
+                    "type": "invalid_request_error",
+                    "code": "invalid_admin_key",
+                }
+            },
+        )

@@ -1,0 +1,107 @@
+"""FastAPI 앱 엔트리 / Application factory + uvicorn entry point.
+
+Template: OpenAI 호환 LLM 게이트웨이의 main.py 스켈레톤.
+TODO 주석을 따라 프로젝트별 패키지 이름 / 라우터로 치환.
+"""
+from __future__ import annotations
+
+import logging
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
+from sqlalchemy import text
+
+# TODO: 패키지 이름을 프로젝트에 맞게 변경 (예: my_gateway.config)
+from gateway.config import get_settings
+from gateway.db import get_engine
+from gateway.middleware.logging import RequestLoggingMiddleware
+from gateway.middleware.rate_limit import limiter, rate_limit_handler
+# TODO: 필요한 라우터만 등록 — 이 템플릿은 표준 4개 (health, models, chat, admin)
+from gateway.routes import admin, chat, health, models
+
+
+def _configure_logging(level: str) -> None:
+    """기본 로깅 설정. 프로덕션에선 JSON 핸들러 권장."""
+    logging.basicConfig(
+        level=getattr(logging, level.upper(), logging.INFO),
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    )
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):  # noqa: ARG001
+    """엔진 초기화. SQLite 사용 시 WAL/foreign_keys PRAGMA 필수."""
+    settings = get_settings()
+    engine = get_engine()
+    if settings.db_url.startswith("sqlite"):
+        async with engine.begin() as conn:
+            await conn.execute(text("PRAGMA journal_mode=WAL"))
+            await conn.execute(text("PRAGMA foreign_keys=ON"))
+            await conn.execute(text("PRAGMA synchronous=NORMAL"))
+    # TODO: 시작 시 업스트림 health check / Prometheus registry 초기화 등 추가
+    yield
+    await engine.dispose()
+
+
+def create_app() -> FastAPI:
+    """FastAPI 앱 팩토리. 테스트에서 별도 settings로 재호출 가능."""
+    settings = get_settings()
+    _configure_logging(settings.log_level)
+
+    app = FastAPI(
+        # TODO: 서비스 이름 / 설명 변경
+        title="<Service Name> Gateway",
+        version="0.1.0",
+        description="OpenAI-compatible gateway",
+        lifespan=lifespan,
+    )
+
+    # 미들웨어 등록 순서 = 실행 역순 (마지막 add가 가장 바깥)
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
+    app.add_middleware(RequestLoggingMiddleware)
+
+    # 라우터 등록
+    app.include_router(health.router)    # /healthz, /readyz, /metrics
+    app.include_router(models.router)    # /v1/models
+    app.include_router(chat.router)      # /v1/chat/completions
+    app.include_router(admin.router)     # /admin/*
+
+    @app.exception_handler(Exception)
+    async def fallback_handler(_: Request, exc: Exception) -> JSONResponse:
+        """OpenAI 형식으로 500 에러 통일."""
+        logging.getLogger("gateway").exception("unhandled error: %s", exc)
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": {
+                    "message": "internal server error",
+                    "type": "server_error",
+                    "code": "internal_error",
+                }
+            },
+        )
+
+    return app
+
+
+app = create_app()
+
+
+def main() -> None:
+    """uvicorn entry point — `python -m gateway.main` 또는 console_scripts."""
+    import uvicorn
+
+    settings = get_settings()
+    uvicorn.run(
+        "gateway.main:app",
+        host=settings.host,
+        port=settings.port,
+        log_level=settings.log_level.lower(),
+    )
+
+
+if __name__ == "__main__":
+    main()
