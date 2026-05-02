@@ -1,0 +1,77 @@
+# Diagram CATALOG
+
+이 파일은 단일 source of truth. 모든 다이어그램을 ID 기반으로 정의.
+`scripts/extract-mmd.sh` 가 각 mermaid 블록을 `mmd/diagram-NN.mmd` 로 추출한다.
+
+## 카테고리 — 시스템 전체상 (flowchart LR)
+
+## diagram-01 — 시스템 전체상 / Whole-System View
+- **Type:** flowchart
+- **Description (KO):** 사용자 → Gateway → 서비스 흐름
+- **Description (EN):** End-to-end flow
+- **Used in:** book Ch.1, paper Fig.1
+
+```mermaid
+flowchart LR
+  U[사용자] -->|HTTPS| GW[Gateway]
+  GW --> S[Service]
+```
+
+## diagram-02 — TODO 카테고리 / TODO category
+- **Type:** flowchart
+- **Description (KO):** TODO
+- **Description (EN):** TODO
+- **Used in:** book Ch.X
+
+```mermaid
+flowchart LR
+  A[TODO] --> B[TODO]
+```
+
+## 카테고리 — 시퀀스 (sequenceDiagram)
+
+## diagram-10 — 요청 흐름 / Request flow
+- **Type:** sequenceDiagram
+- **Description (KO):** 클라이언트 → API → DB 시퀀스
+- **Description (EN):** Client to DB sequence
+- **Used in:** book Ch.4
+
+```mermaid
+sequenceDiagram
+  Client->>API: POST /v1/x
+  API->>DB: SELECT
+  DB-->>API: row
+  API-->>Client: 200 OK
+```
+
+## 카테고리 — 데이터 모델 (erDiagram)
+
+## diagram-20 — 데이터 모델 / Data model
+- **Type:** erDiagram
+- **Description (KO):** 핵심 엔티티 관계
+- **Description (EN):** Core entity relations
+- **Used in:** book Ch.6
+
+```mermaid
+erDiagram
+  USER ||--o{ ORDER : places
+  ORDER ||--|{ ITEM : contains
+```
+
+## 카테고리 — 상태/인증 흐름 (flowchart)
+
+## diagram-30 — 인증 흐름 / Auth flow
+- **Type:** flowchart
+- **Description (KO):** API key 검증 단계
+- **Description (EN):** API key validation
+- **Used in:** book Ch.7
+
+```mermaid
+flowchart TB
+  R[Request] --> H{Has API key?}
+  H -->|No| E[401]
+  H -->|Yes| V[Verify]
+  V --> OK[200]
+```
+
+<!-- 추가 다이어그램은 위 패턴을 복제. ID 는 unique 하게 증가 (diagram-31, diagram-32, ...) -->
