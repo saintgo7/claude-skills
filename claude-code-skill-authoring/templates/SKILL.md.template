@@ -1,0 +1,34 @@
+---
+name: __SKILL_NAME__
+description: '__ONE_LINE_DESCRIPTION__. 사용 시점 — "phrase 1", "phrase 2", "phrase 3", "phrase 4", "phrase 5". __ROLE_DESCRIPTION__'
+---
+
+# __SKILL_NAME__
+
+(한 줄 요약 — 이 skill이 무엇을 하는지)
+
+## 사용 시점
+
+- "phrase 1"
+- "phrase 2"
+- "phrase 3"
+- 구체 시나리오 1
+- 구체 시나리오 2
+
+## 핵심 명령
+
+```bash
+# 가장 자주 쓰이는 한 줄
+```
+
+## 옵션 / 변형
+
+## 흔한 함정
+
+| 증상 | 해결 |
+|---|---|
+| TODO | TODO |
+
+## 관련 skill
+
+- `다른-skill` — 이때 사용
