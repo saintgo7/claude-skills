@@ -1,0 +1,58 @@
+"""Prometheus 커스텀 메트릭 정의 (FastAPI service).
+
+Cardinality 보호 원칙:
+- path: 화이트리스트 (_KNOWN_PATHS) 만 라벨 그대로, 나머지는 "other"
+- model / kind / reason: 알려진 enum 만 통과
+- status: HTTP code 정수 (text X)
+
+치환 변수:
+  <service>           — 서비스 prefix (예: gateway, billing, search)
+  <domain_metric>     — 도메인 카운터명 (예: chat_completions, orders, queries)
+  <bucket_unit>       — latency 단위 (ms 권장, _ms suffix 포함)
+"""
+from __future__ import annotations
+
+from prometheus_client import Counter, Gauge, Histogram
+
+# ── 미들웨어 layer (모든 요청) ────────────────────────────────────────────
+
+<service>_requests_total = Counter(
+    "<service>_requests_total",
+    "Total HTTP requests",
+    ["method", "path", "status"],
+)
+
+<service>_active_requests = Gauge(
+    "<service>_active_requests",
+    "Currently active requests",
+)
+
+# ── 라우트 layer (도메인별) ──────────────────────────────────────────────
+
+<service>_<domain_metric>_total = Counter(
+    "<service>_<domain_metric>_total",
+    "<Domain> count",
+    ["model", "stream", "status"],  # 비즈니스 라벨, 모두 known set
+)
+
+<service>_tokens_total = Counter(
+    "<service>_tokens_total",
+    "Tokens / units processed",
+    ["model", "kind"],  # kind: prompt | completion (또는 in/out)
+)
+
+<service>_<domain_metric>_latency_ms = Histogram(
+    "<service>_<domain_metric>_latency_ms",
+    "<Domain> latency (ms)",
+    ["model"],
+    buckets=(50, 100, 200, 500, 1000, 2000, 5000, 10000, 30000),
+    # 일반 REST: (1, 5, 10, 25, 50, 100, 250, 500, 1000)
+)
+
+# ── 서비스 layer (거부/실패) ──────────────────────────────────────────────
+
+<service>_rejections_total = Counter(
+    "<service>_rejections_total",
+    "Request rejections",
+    ["reason"],  # 화이트리스트: rate_limit | quota | invalid_input | …
+)

@@ -1,0 +1,59 @@
+"""미들웨어에서 메트릭 기록 — 모든 요청 공통 카운터/게이지.
+
+핵심:
+- path 화이트리스트로 cardinality 보호
+- Gauge inc/dec 는 try-finally (예외에도 반드시 dec)
+- model 등 도메인 라벨은 여기서 X (라우트에서 따로 기록)
+"""
+from __future__ import annotations
+
+import time
+
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
+
+from <service>.metrics import <service>_active_requests, <service>_requests_total
+
+# 알려진 path 만 라벨 그대로 노출, 나머지는 "other" 또는 prefix 그룹
+_KNOWN_PATHS = {
+    "/healthz",
+    "/readyz",
+    "/metrics",
+    "/v1/models",
+    "/v1/chat/completions",
+}
+
+
+def _label_path(path: str) -> str:
+    if path in _KNOWN_PATHS:
+        return path
+    if path.startswith("/admin"):
+        return "/admin/*"
+    return "other"
+
+
+class MetricsMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next) -> Response:  # type: ignore[override]
+        path_label = _label_path(request.url.path)
+        method = request.method
+
+        <service>_active_requests.inc()
+        started = time.perf_counter()
+        status_code = 500
+        try:
+            try:
+                response = await call_next(request)
+                status_code = response.status_code
+            except Exception:
+                <service>_requests_total.labels(
+                    method=method, path=path_label, status="500"
+                ).inc()
+                raise
+            <service>_requests_total.labels(
+                method=method, path=path_label, status=str(status_code)
+            ).inc()
+            return response
+        finally:
+            <service>_active_requests.dec()
+            # elapsed = (time.perf_counter() - started) * 1000  # 필요 시 latency 기록
