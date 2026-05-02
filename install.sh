@@ -56,6 +56,7 @@ REGISTRY=(
   "pytest-fastapi-pattern|skill|pytest로 FastAPI 통합 테스트 (httpx async + ASGITransport + respx + lifespan + 격리, 219 테스트 검증)"
   "bash-cli-best-practices|skill|bash 운영 CLI 작성 8 검증 패턴 (set -euo pipefail, sub-cmd, mv to _trash, SQL injection 방지)"
   "claude-code-skill-authoring|skill|Claude Code skill 작성 메타 가이드 (frontmatter, REGISTRY, install/uninstall, CI validation)"
+  "deployment-checklist|skill|LLM/API 서비스 배포 전 체크리스트 7영역 56항목 (인증/보안/모니터링/스케일/문서/롤백/외부) — GEM-LLM 28일 운영 검증"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────

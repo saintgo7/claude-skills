@@ -1,0 +1,110 @@
+# Deployment Checklist — <PROJECT_NAME> v<VERSION>
+
+배포 일자: YYYY-MM-DD
+담당: <NAME>
+대상 환경: production / staging
+이전 버전: v<PREV_VERSION>
+
+각 항목 옆에 증거 (cURL / 스크린샷 / 테스트 로그 경로) 를 붙일 것.
+미충족 항목은 `[ ]` 유지하고 "이유 / 보완 일정" 을 메모.
+
+---
+
+## 1. 인증 (Authentication) — 8
+
+- [ ] API key 형식 정의 (`<prefix>_<32hex>`)
+- [ ] 키 해시 저장 (SHA256+salt 또는 argon2)
+- [ ] `revoked` 플래그 (삭제 X)
+- [ ] admin key 별도 prefix + 별도 검증
+- [ ] OAuth 옵션 검토 (Phase 2)
+- [ ] 로그/메트릭에 키 prefix 만 노출
+- [ ] 키 만료 정책 (90일 / 1년 / rotate 절차)
+- [ ] 키 발급/폐기 admin CLI
+
+## 2. 보안 (Security) — 8
+
+- [ ] HTTPS 강제 (HSTS 헤더 포함)
+- [ ] CORS origin 화이트리스트 (와일드카드 X)
+- [ ] 위험 명령 차단 (`rm -rf`, `mkfs`, `dd of=` 등)
+- [ ] SQL injection 방지 (parameterized query 강제)
+- [ ] secret 환경변수 / secret manager (코드 X)
+- [ ] `.env` `.gitignore` 등록 + pre-commit hook
+- [ ] 감사 로그 (admin 작업 trail)
+- [ ] 요청/응답 본문 마스킹 (PII 보호)
+
+## 3. 모니터링 (Observability) — 8
+
+- [ ] `/healthz` (process) 엔드포인트
+- [ ] `/readyz` (DB+upstream) 엔드포인트
+- [ ] `/metrics` (Prometheus) 엔드포인트
+- [ ] Grafana dashboard (RPS / p50/p95/p99 / 에러율 / 거부율)
+- [ ] 알림 (5xx 임계, p95 임계)
+- [ ] 로그 집계 (회전 또는 외부 수집)
+- [ ] error tracking (Sentry 등) — 옵션
+- [ ] tracing (OTel) / 메트릭 cardinality 제한
+
+## 4. 스케일 (Scaling) — 8
+
+- [ ] DB pool size (SQLAlchemy `pool_size=50, max_overflow=150` 이상)
+- [ ] Rate limit 3계층 (RPM / daily / concurrent + reason code)
+- [ ] vLLM TP 설정 (모델/GPU 매칭)
+- [ ] PostgreSQL 마이그레이션 plan (100+ 동접 대비)
+- [ ] caching (Redis 등) — 옵션
+- [ ] async I/O 일관성 (FastAPI + httpx + SQLAlchemy)
+- [ ] 부하 테스트 (50/100/200 동접 5xx 0)
+- [ ] 타임아웃 + 백프레셔 한도
+
+## 5. 문서 (Documentation) — 8
+
+- [ ] README + 빠른 시작 (5분)
+- [ ] API 레퍼런스 (`/docs`, `/redoc`)
+- [ ] User 매뉴얼
+- [ ] Admin 매뉴얼
+- [ ] 운영 runbook (start/stop/status/restart)
+- [ ] 에러 사례집
+- [ ] 다이어그램 (Mermaid)
+- [ ] CHANGELOG (SemVer) / 온보딩 문서
+
+## 6. 롤백 (Rollback) — 8
+
+- [ ] DB 마이그레이션 reversible (Alembic downgrade 검증)
+- [ ] git tag (`v0.x.x`) + 릴리스 노트
+- [ ] 이전 버전 복원 5분 리허설
+- [ ] DB 백업 (WAL 안전 / `pg_dump` cron)
+- [ ] 백업 복원 검증 (분기 1회)
+- [ ] 카나리 배포 — 옵션
+- [ ] feature flag — 옵션
+- [ ] 마이그레이션 dry-run
+
+## 7. 외부 (External) — 8
+
+- [ ] 도메인 + DNS (TTL 짧게)
+- [ ] SSL/TLS cert + 만료 알림 (30일 전)
+- [ ] 외부 API key (HF_TOKEN 등) rotate 일정
+- [ ] 외부 서비스 SLA / 장애 페이지 구독
+- [ ] CDN — 옵션
+- [ ] 백업 도메인 — 옵션
+- [ ] 외부 webhook 재시도 + dead letter
+- [ ] 외부 장애 fallback 경로
+
+---
+
+## Go-Live 단축판 (직전 5)
+
+- [ ] 1. `pytest` 0 fail
+- [ ] 2. 부하 테스트 목표 동접 5xx 0
+- [ ] 3. `/healthz`, `/readyz` 외부 cURL 200
+- [ ] 4. Grafana + 알림 가동 확인
+- [ ] 5. 롤백 리허설 1회 통과
+
+---
+
+## 충족 / 미충족 요약
+
+- 충족: __ / 56
+- 미충족: __ / 56
+
+미충족 항목 + 이유 + 보완 일정:
+
+1. <항목명> — <이유> — <보완 일정>
+2. ...
