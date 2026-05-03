@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+# cutover.sh.template — blue/green 무중단 cutover 표준 10단계
+#
+# 사용법: 아래 변수를 실제 값으로 치환한 뒤 실행
+#   <service_name>   서비스 이름 (예: vllm-gemma)
+#   <old_venv>       blue venv 절대경로 (예: /home/jovyan/vllm-env)
+#   <new_venv>       green venv 절대경로 (예: /home/jovyan/vllm-env-020)
+#   <port_blue>      blue 운영 포트 (예: 8001)
+#   <port_green>     green 검증 포트 (예: 8003)
+#   <model_path>     모델 경로 또는 HF id
+#   <tp_full>        풀 비율 시 tensor-parallel-size (예: 4)
+#   <gpu_full>       풀 GPU 메모리 비율 (예: 0.90)
+#   <gpu_smoke>      smoke 단계 GPU 메모리 비율 (예: 0.10)
+#
+# 단계별로 게이트 통과 못하면 즉시 exit. rollback.sh 는 별도 호출.
+
+set -euo pipefail
+
+SERVICE="<service_name>"
+OLD_VENV="<old_venv>"
+NEW_VENV="<new_venv>"
+PORT_BLUE=<port_blue>
+PORT_GREEN=<port_green>
+MODEL="<model_path>"
+TP_FULL=<tp_full>
+GPU_FULL=<gpu_full>
+GPU_SMOKE=<gpu_smoke>
+
+LOG_DIR="_logs"
+TRASH_DIR="_trash"
+PID_NEW="${LOG_DIR}/${SERVICE}-NEW.pid"
+PID_OLD="${LOG_DIR}/${SERVICE}-OLD.pid"
+mkdir -p "$LOG_DIR" "$TRASH_DIR"
+
+log() { echo "[$(date +%H:%M:%S)] $*"; }
+fail() { log "FAIL: $*"; exit 1; }
+
+# ── 1. 사전 점검 ─────────────────────────────────────────────────────────
+log "[1/10] 사전 점검"
+curl -sf "http://localhost:${PORT_BLUE}/v1/models" >/dev/null \
+    || fail "blue (${PORT_BLUE}) 응답 없음 — cutover 시작 전 blue 가 살아있어야 함"
+df -h ~ | tail -1 | awk '{ if ($5+0 > 90) exit 1 }' \
+    || fail "디스크 사용률 > 90%"
+nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits \
+    | awk '{ if ($1 < 5000) exit 1 }' \
+    || fail "GPU 여유 메모리 부족 (< 5GB)"
+log "  OK"
+
+# ── 2. flashinfer cache 격리 ─────────────────────────────────────────────
+log "[2/10] flashinfer cache 격리"
+if [ -d "$HOME/.cache/flashinfer" ]; then
+    mv "$HOME/.cache/flashinfer" "${TRASH_DIR}/flashinfer-cache-old-$(date +%Y%m%d-%H%M%S)"
+    log "  cache moved to ${TRASH_DIR}/"
+else
+    log "  no cache to move"
+fi
+
+# ── 3. green start (작은 GPU 비율, 새 포트) ──────────────────────────────
+log "[3/10] green start (port=${PORT_GREEN}, gpu=${GPU_SMOKE})"
+nohup "${NEW_VENV}/bin/python" -m vllm.entrypoints.openai.api_server \
+    --model "$MODEL" \
+    --port "$PORT_GREEN" \
+    --tensor-parallel-size 1 \
+    --gpu-memory-utilization "$GPU_SMOKE" \
+    > "${LOG_DIR}/${SERVICE}-NEW.log" 2>&1 &
+echo $! > "$PID_NEW"
+log "  pid=$(cat "$PID_NEW")"
+
+# ── 4. 헬스체크 + smoke ─────────────────────────────────────────────────
+log "[4/10] 헬스체크 + smoke (최대 10분 대기)"
+for i in $(seq 1 60); do
+    sleep 10
+    if curl -sf "http://localhost:${PORT_GREEN}/v1/models" >/dev/null 2>&1; then
+        log "  health OK ($((i*10))s)"
+        break
+    fi
+    [ "$i" -eq 60 ] && fail "green 헬스체크 timeout"
+done
+
+SMOKE=$(curl -sf -X POST "http://localhost:${PORT_GREEN}/v1/chat/completions" \
+    -H 'Content-Type: application/json' \
+    -d "{\"model\":\"$MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"max_tokens\":10}" \
+    || true)
+[ -z "$SMOKE" ] && fail "smoke test 실패"
+echo "$SMOKE" | grep -q '"content"' || fail "smoke 응답 본문 비정상"
+log "  smoke OK"
+
+# ── 5. 사용자 승인 게이트 ────────────────────────────────────────────────
+log "[5/10] 사용자 승인 대기"
+echo ""
+echo "Green smoke test passed (port ${PORT_GREEN})."
+echo "Next: stop blue (${PORT_BLUE}), restart green at full GPU."
+echo "Estimated downtime: 2-5 minutes."
+read -r -p "Proceed with cutover? (yes/no): " confirm
+[ "$confirm" = "yes" ] || { log "Aborted by user — green still running on ${PORT_GREEN}"; exit 0; }
+
+# ── 6. blue stop ─────────────────────────────────────────────────────────
+log "[6/10] blue stop"
+pkill -TERM -f "${OLD_VENV}.*${PORT_BLUE}" || log "  blue 이미 정지?"
+sleep 5
+pkill -KILL -f "${OLD_VENV}.*${PORT_BLUE}" 2>/dev/null || true
+
+# green 도 일단 정지 (포트/GPU 비율 변경 위해 재시작 필요)
+kill -TERM "$(cat "$PID_NEW")" 2>/dev/null || true
+sleep 5
+
+# ── 7. green 풀 비율 재시작 (운영 포트로) ────────────────────────────────
+log "[7/10] green 풀 비율 재시작 (port=${PORT_BLUE}, tp=${TP_FULL}, gpu=${GPU_FULL})"
+nohup "${NEW_VENV}/bin/python" -m vllm.entrypoints.openai.api_server \
+    --model "$MODEL" \
+    --port "$PORT_BLUE" \
+    --tensor-parallel-size "$TP_FULL" \
+    --gpu-memory-utilization "$GPU_FULL" \
+    > "${LOG_DIR}/${SERVICE}-PROD.log" 2>&1 &
+echo $! > "$PID_NEW"
+
+# ── 8. 헬스체크 + 부하 ───────────────────────────────────────────────────
+log "[8/10] 헬스체크 + 부하"
+for i in $(seq 1 60); do
+    sleep 10
+    curl -sf "http://localhost:${PORT_BLUE}/v1/models" >/dev/null && break
+    [ "$i" -eq 60 ] && fail "운영 포트 헬스체크 timeout — rollback.sh 실행 권장"
+done
+log "  health OK"
+
+# ── 9. 종합 검증 (Gateway 포함) ─────────────────────────────────────────
+log "[9/10] 종합 검증"
+# 외부 도메인 / Gateway / 다른 컴포넌트 헬스 — 환경에 맞게 추가
+log "  (placeholder — 환경별 컴포넌트 헬스 추가)"
+
+# ── 10. 완료 ────────────────────────────────────────────────────────────
+log "[10/10] cutover 완료. green pid=$(cat "$PID_NEW")"
+log "rollback 필요 시: bash scripts/rollback.sh"

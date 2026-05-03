@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# rollback.sh.template — cutover 실패 시 즉시 blue 복귀
+#
+# 사용법: cutover.sh 와 동일 변수 치환 후 실행.
+# 호출 시점:
+#   - 사용자 승인 후 응답 품질 이상
+#   - 부하 테스트 실패
+#   - Gateway upstream 502 지속
+
+set -euo pipefail
+
+SERVICE="<service_name>"
+OLD_VENV="<old_venv>"
+NEW_VENV="<new_venv>"
+PORT_BLUE=<port_blue>
+MODEL="<model_path>"
+TP_FULL=<tp_full>
+GPU_FULL=<gpu_full>
+
+LOG_DIR="_logs"
+TRASH_DIR="_trash"
+PID_NEW="${LOG_DIR}/${SERVICE}-NEW.pid"
+mkdir -p "$LOG_DIR"
+
+log() { echo "[$(date +%H:%M:%S)] ROLLBACK: $*"; }
+
+# 1. green 즉시 종료
+log "green 종료"
+if [ -f "$PID_NEW" ]; then
+    kill -TERM "$(cat "$PID_NEW")" 2>/dev/null || true
+    sleep 5
+    kill -KILL "$(cat "$PID_NEW")" 2>/dev/null || true
+fi
+pkill -KILL -f "${NEW_VENV}.*${PORT_BLUE}" 2>/dev/null || true
+
+# 2. flashinfer cache 복원 (blue 가 옛 cache 의존 가능)
+log "flashinfer cache 복원"
+LATEST_CACHE=$(ls -td "${TRASH_DIR}"/flashinfer-cache-old-* 2>/dev/null | head -1 || true)
+if [ -n "$LATEST_CACHE" ] && [ ! -d "$HOME/.cache/flashinfer" ]; then
+    mv "$LATEST_CACHE" "$HOME/.cache/flashinfer"
+    log "  복원: $LATEST_CACHE → ~/.cache/flashinfer"
+fi
+
+# 3. blue 재시작 (옛 venv, 운영 포트)
+log "blue 재시작 (${OLD_VENV}, port=${PORT_BLUE})"
+nohup "${OLD_VENV}/bin/python" -m vllm.entrypoints.openai.api_server \
+    --model "$MODEL" \
+    --port "$PORT_BLUE" \
+    --tensor-parallel-size "$TP_FULL" \
+    --gpu-memory-utilization "$GPU_FULL" \
+    > "${LOG_DIR}/${SERVICE}-ROLLBACK.log" 2>&1 &
+echo $! > "${LOG_DIR}/${SERVICE}-OLD.pid"
+
+# 4. 헬스체크
+for i in $(seq 1 60); do
+    sleep 10
+    if curl -sf "http://localhost:${PORT_BLUE}/v1/models" >/dev/null 2>&1; then
+        log "blue 복귀 완료 ($((i*10))s)"
+        exit 0
+    fi
+done
+
+log "blue 헬스체크 timeout — 수동 개입 필요"
+exit 1
