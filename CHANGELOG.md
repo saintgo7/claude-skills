@@ -9,6 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (현재 main 브랜치에 머지되었으나 아직 태깅되지 않은 변경사항이 여기에 누적됩니다.)
 
+## [0.7.3] - 2026-05-02
+
+### Added
+- `cicd-github-actions-pattern` skill — GitHub Actions CI/CD 검증된 패턴
+  (validate.yml: SKILL.md frontmatter 검증 + REGISTRY ↔ 디렉토리 교차 검증 + Bash 문법 검사,
+  pip-audit.yml: push/PR + 매주 월 09:00 UTC 의존성 스캔, gateway/cli 분리,
+  atomic commit check: PR base..HEAD diff 에서 새 SKILL.md vs install.sh REGISTRY 추가
+  일치 확인 — case CI transient mismatch 회피;
+  claude-skills 자체 워크플로 **41 run green** 으로 검증된 베이스라인,
+  GEM-LLM `pip-audit` weekly 27 vulnerabilities 식별 → fix 4단계 통합)
+- `api-key-lifecycle-pattern` skill — API key 발급/회수/검증 라이프사이클 패턴
+  (`gem_live_<32hex>` 포맷 — `gem_live_` prefix 8자 lookup + sha256+salt 해시 저장,
+  raw key는 issue 직후 1회만 표시 (`raw_key`는 DB 미저장),
+  revoke 시 soft-delete (`revoked_at` timestamp, key 자체는 보존하여 audit log 추적),
+  prefix 8자 인덱스로 sha256 해시 비교 비용 최소화 — 19 keys 환경에서 P50 < 1ms,
+  GEM-LLM gateway `/v1/auth` 미들웨어 + admin-cli `issue-key`/`revoke-key`/`list-keys` 검증,
+  templates/ — SQLAlchemy 모델, FastAPI dependency, admin-cli 명령 3종)
+- `k8s-cron-alternatives` skill — K8s pod / cron 미설치 환경 정기 작업 5 패턴
+  (1) bash watchdog (sleep loop, supervisor.sh 통합, GEM-LLM `cve-watcher` 검증),
+  (2) Kubernetes CronJob (cluster-level, RBAC + ServiceAccount),
+  (3) external scheduler (GitHub Actions schedule, AWS EventBridge),
+  (4) s6-cron in cont-init.d (동일 파드 영구, overlay FS 한계),
+  (5) supervisord [program] autostart=true autorestart=true;
+  GEM-LLM `backup-db.sh` 일 1회 + `cve-watcher.sh` 주 1회 검증,
+  systemd 부재 환경의 표준 패턴 매핑, livenessProbe와 분리 가이드)
+- `.githooks/pre-commit` — atomic commit hook
+  (새 `<name>/SKILL.md` 디렉토리 추가 시 같은 commit에 install.sh REGISTRY entry가
+  함께 들어가는지 검증 — case CI transient mismatch 회피;
+  반대로 REGISTRY entry 추가 시 디렉토리/SKILL.md 동시 존재 검증)
+- GitHub Actions `validate.yml` 에 **Atomic commit check** step 추가
+  (PR base..HEAD diff 에서 새 SKILL.md 디렉토리 vs install.sh REGISTRY 추가 일치 확인;
+  pre-commit hook 과 2단 디펜스 — 로컬 stage 단계 + CI PR 단계)
+
+### Changed
+- `install.sh` REGISTRY **41 → 44 entries** (43 skills + 1 command) — 신규 3개 추가
+
 ## [0.7.2] - 2026-05-02
 
 ### Added
@@ -241,7 +277,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - GitHub에서 선택한 skill만 다운로드 (전체 repo clone 불필요)
   - `./install.sh --list` 로 사용 가능한 skill 목록 표시
 
-[Unreleased]: https://github.com/USER/claude-skills/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/USER/claude-skills/compare/v0.7.3...HEAD
+[0.7.3]: https://github.com/USER/claude-skills/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/USER/claude-skills/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/USER/claude-skills/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/USER/claude-skills/compare/v0.6.0...v0.7.0
