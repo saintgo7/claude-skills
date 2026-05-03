@@ -1,0 +1,39 @@
+# =============================================================================
+# AUTOSTART_<NAME>  (idempotent ~/.bashrc autostart guard)
+# =============================================================================
+# Replace placeholders:
+#   <NAME>             — uppercase tag (e.g. CLOUDFLARED, SSHD, SUPERVISOR)
+#   <name>             — lowercase slug (used in log filename)
+#   <unique-pattern>   — pgrep -f pattern, must be unique enough to avoid
+#                        matching unrelated processes (use full path)
+#   <command>          — full command line (with absolute paths)
+#   <precondition>     — optional pre-check (e.g. config file exists)
+#
+# Append this block ONCE to ~/.bashrc.  Re-running is safe because the
+# pgrep guard short-circuits when the process is already up.
+#
+# To detect duplicate insertion, do:
+#   grep -q "AUTOSTART_<NAME>" ~/.bashrc || cat <<'EOF' >> ~/.bashrc
+#   ... (this block) ...
+#   EOF
+# -----------------------------------------------------------------------------
+
+# === AUTOSTART_<NAME> (idempotent) ===
+mkdir -p "$HOME/.local/log"
+if [ <precondition> ] && \
+   ! pgrep -f "<unique-pattern>" >/dev/null 2>&1; then
+  nohup <command> >> "$HOME/.local/log/<name>.log" 2>&1 &
+  disown 2>/dev/null || true
+fi
+# === /AUTOSTART_<NAME> ===
+
+# Examples (working in gem-llm):
+#
+# === AUTOSTART_SSHD (idempotent) ===
+# mkdir -p "$HOME/.local/log"
+# if [ -f "$HOME/.ssh/sshd_config" ] && \
+#    ! pgrep -f "/usr/sbin/sshd .*$HOME/.ssh/sshd_config" >/dev/null 2>&1; then
+#   nohup /usr/sbin/sshd -f "$HOME/.ssh/sshd_config" \
+#     >> "$HOME/.local/log/sshd.log" 2>&1 &
+# fi
+# === /AUTOSTART_SSHD ===

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# =============================================================================
+# check-autostart.sh
+#
+# Verify all autostart guards in ~/.bashrc fired correctly and produced
+# exactly one running process per pattern.  Race-detection: pgrep -c > 1
+# means the guard was leaky and you have duplicate processes.
+#
+# Usage:  bash scripts/check-autostart.sh
+# Exit:   0 = all good; 1 = at least one pattern missing or duplicated.
+# -----------------------------------------------------------------------------
+
+set -u
+
+# Edit this list with your real autostart targets:
+#   "<label>|<unique-pgrep-pattern>"
+TARGETS=(
+  "sshd|/usr/sbin/sshd"
+  "cloudflared|cloudflared tunnel run"
+  "supervisor|supervisor.sh"
+)
+
+fail=0
+echo "=== autostart check  $(date -Is) ==="
+
+for entry in "${TARGETS[@]}"; do
+  label="${entry%%|*}"
+  pat="${entry#*|}"
+  count="$(pgrep -c -f "$pat" 2>/dev/null || echo 0)"
+
+  case "$count" in
+    0)
+      printf "  [MISS]   %-14s  pattern=%q\n" "$label" "$pat"
+      fail=1
+      ;;
+    1)
+      pid="$(pgrep -f "$pat" | head -1)"
+      printf "  [OK]     %-14s  pid=%s\n" "$label" "$pid"
+      ;;
+    *)
+      printf "  [DUP=%s] %-14s  pattern=%q (guard race?)\n" "$count" "$label" "$pat"
+      fail=1
+      ;;
+  esac
+done
+
+echo "=== done (fail=$fail) ==="
+exit "$fail"

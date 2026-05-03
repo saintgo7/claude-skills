@@ -47,6 +47,7 @@ REGISTRY=(
   "fastapi-gateway-pattern|skill|FastAPI OpenAI 호환 LLM 게이트웨이 구축 패턴 (인증/quota/스트리밍/SQLAlchemy pool)"
   "vllm-bootstrap|skill|vLLM 처음부터 부팅 가이드 (의존성 매트릭스, TP=1~8 선택, tool-call-parser, 부팅 실패 13개 패턴)"
   "k8s-pod-autostart|skill|K8s pod / 컨테이너 환경에서 systemd 없이 자동 시작 (s6 cont-init, .bashrc one-shot, watchdog, livenessProbe 4가지 패턴)"
+  "pod-process-autostart-pattern|skill|K8s pod / systemd-less idempotent 자동 시작 (~/.bashrc 가드 + s6 + supervisord + lifecycle.postStart) — gem-llm 55h 검증"
   "llm-eval-multi-model|skill|여러 LLM 동시 평가/비교 (latency, throughput, 정확도, tool calling, 한국어 응답)"
   "postgres-migration-from-sqlite|skill|SQLite → PostgreSQL 마이그레이션 (FastAPI/SQLAlchemy/Alembic, 100+ 동접 production scaling)"
   "prometheus-fastapi-metrics|skill|FastAPI Prometheus 커스텀 메트릭 추가 (Counter/Histogram/Gauge 3계층, cardinality 제한, Grafana 시작)"
