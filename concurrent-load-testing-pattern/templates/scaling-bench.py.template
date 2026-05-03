@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+"""
+scaling-bench — asyncio 동시성 부하 테스트 일반 도구.
+
+특징:
+  - KEY_LIST 분산 + per_key 자동 계산
+  - p50/p95/p99 정확 측정
+  - markdown 보고서 자동 생성
+
+사용:
+  KEY_LIST=key1,key2,...  ./scaling-bench.py --conc 100 --reqs 10
+"""
+import argparse
+import asyncio
+import json
+import math
+import os
+import statistics
+import sys
+import time
+from pathlib import Path
+
+import httpx
+
+# ── 설정 ────────────────────────────────────────────────────────────────────
+URL = os.environ.get("BENCH_URL", "http://localhost:8080/v1/chat/completions")
+MODEL = os.environ.get("BENCH_MODEL", "exaone")
+TIMEOUT_S = float(os.environ.get("BENCH_TIMEOUT", "60"))
+
+PAYLOAD = {
+    "model": MODEL,
+    "messages": [{"role": "user", "content": "Say hello in one short sentence."}],
+    "max_tokens": 64,
+    "temperature": 0.0,
+}
+
+
+# ── 워커 ────────────────────────────────────────────────────────────────────
+async def request_once(client: httpx.AsyncClient, key: str):
+    t0 = time.monotonic()
+    try:
+        resp = await client.post(
+            URL,
+            headers={"Authorization": f"Bearer {key}"},
+            json=PAYLOAD,
+            timeout=TIMEOUT_S,
+        )
+        elapsed = time.monotonic() - t0
+        tokens = 0
+        if resp.status_code == 200:
+            data = resp.json()
+            tokens = data.get("usage", {}).get("completion_tokens", 0)
+        return elapsed, resp.status_code, tokens
+    except (httpx.TimeoutException, httpx.HTTPError) as e:
+        return time.monotonic() - t0, 0, 0
+
+
+async def worker(client, key, count, results):
+    for _ in range(count):
+        results.append(await request_once(client, key))
+
+
+# ── 보고서 ──────────────────────────────────────────────────────────────────
+def percentile(sorted_data, p):
+    if not sorted_data:
+        return 0.0
+    idx = min(int(len(sorted_data) * p), len(sorted_data) - 1)
+    return sorted_data[idx]
+
+
+def report(results, total_time, conc, keys, reqs):
+    successes = [r for r in results if r[1] == 200]
+    fail = len(results) - len(successes)
+    latencies = sorted([r[0] for r in successes])
+    tokens = sum(r[2] for r in successes)
+
+    rps = len(successes) / total_time if total_time else 0
+    tps = tokens / total_time if total_time else 0
+    success_rate = len(successes) / len(results) * 100 if results else 0
+
+    md = f"""# scaling-bench report
+
+| metric | value |
+|---|---|
+| concurrency | {conc} |
+| keys | {len(keys)} |
+| req/user | {reqs} |
+| total req | {len(results)} |
+| successes | {len(successes)} ({success_rate:.1f}%) |
+| failures | {fail} |
+| total time | {total_time:.2f}s |
+| **RPS** | **{rps:.2f}** |
+| TPS (completion) | {tps:.0f} |
+| p50 latency | {percentile(latencies, 0.50)*1000:.0f} ms |
+| p95 latency | {percentile(latencies, 0.95)*1000:.0f} ms |
+| p99 latency | {percentile(latencies, 0.99)*1000:.0f} ms |
+| max latency | {(latencies[-1] if latencies else 0)*1000:.0f} ms |
+"""
+    print(md)
+    out = Path(f"bench-report-conc{conc}.md")
+    out.write_text(md)
+    print(f"\n→ saved {out}")
+
+
+# ── 메인 ────────────────────────────────────────────────────────────────────
+async def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--conc", type=int, default=50, help="target concurrency")
+    parser.add_argument("--reqs", type=int, default=10, help="requests per user")
+    args = parser.parse_args()
+
+    keys_env = os.environ.get("KEY_LIST", "").strip()
+    if not keys_env:
+        print("ERROR: set KEY_LIST=key1,key2,...", file=sys.stderr)
+        sys.exit(1)
+    keys = [k.strip() for k in keys_env.split(",") if k.strip()]
+
+    users_per_key = max(1, math.ceil(args.conc / len(keys)))
+    actual_conc = users_per_key * len(keys)
+    print(f"→ {len(keys)} keys × {users_per_key} users = {actual_conc} concurrent (target {args.conc})")
+
+    results = []
+    async with httpx.AsyncClient(
+        limits=httpx.Limits(max_connections=actual_conc * 2, max_keepalive_connections=actual_conc),
+    ) as client:
+        tasks = []
+        for key in keys:
+            for _ in range(users_per_key):
+                tasks.append(worker(client, key, args.reqs, results))
+        t0 = time.monotonic()
+        await asyncio.gather(*tasks)
+        total = time.monotonic() - t0
+
+    report(results, total, actual_conc, keys, args.reqs)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
