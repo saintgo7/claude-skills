@@ -1,6 +1,6 @@
 ---
 name: cloudflare-tunnel-setup
-description: 'Cloudflare Tunnel을 처음부터 셋업 — 도메인 → 로컬 서비스 HTTPS 노출. 사용 시점 — "cloudflared 설치", "tunnel 새로 만들기", "도메인 라우팅", "k8s pod 외부 노출", "방화벽 우회 https", "내 노트북 서비스 인터넷에", "고정 IP 없이 외부 접근", "ssh 외부에서 들어가기", "여러 도메인 한 tunnel", "https 무료 인증서". 토큰 인증, ingress config, systemd-style 운영, 다중 hostname, SSH ProxyCommand 패턴 포함.'
+description: 'Cloudflare Tunnel을 처음부터 셋업 — 도메인 → 로컬 서비스 HTTPS + SSH 라우팅. 사용 시점 — "cloudflared 설치", "tunnel 새로 만들기", "도메인 라우팅", "k8s pod 외부 노출", "방화벽 우회 https", "내 노트북 서비스 인터넷에", "고정 IP 없이 외부 접근", "ssh 외부에서 들어가기", "여러 도메인 한 tunnel", "https 무료 인증서". 토큰 인증, ingress config (HTTP + SSH/TCP), systemd-style 운영, 다중 hostname, SSH ProxyCommand 패턴 포함.'
 ---
 
 # cloudflare-tunnel-setup
@@ -233,6 +233,28 @@ curl -s -m 5 -o /dev/null -w "%{http_code}\n" https://app.example.com/
 
 같은 tunnel UUID 하나로 수십 개 hostname 라우팅 가능.
 
+## SSH (TCP) 라우팅
+
+cloudflare tunnel은 HTTP 외에 SSH도 라우팅 가능:
+
+```yaml
+ingress:
+  - hostname: master-ssh.pamout.com
+    service: ssh://localhost:2222     # ← TCP 라우팅
+  - hostname: app.pamout.com
+    service: http://localhost:8080    # ← HTTP 라우팅 (기존)
+  - service: http_status:404
+```
+
+외부 클라이언트는 `cloudflared access ssh` 를 ProxyCommand 로:
+
+```ssh-config
+Host master
+  ProxyCommand cloudflared access ssh --hostname master-ssh.pamout.com
+```
+
+상세 패턴은 → `cloudflare-tunnel-ssh-access-pattern` skill 참조.
+
 ## SSH 우회 — `cloudflared access ssh` ProxyCommand
 
 방화벽 뒤 호스트 SSH 노출. 서버 측 ingress:
@@ -301,6 +323,9 @@ cloudflared tunnel create nodeB-tunnel
 
 - `project-bootstrap` — 새 프로젝트 시작 시 도메인 노출 단계
 - `gem-llm-cloudflare-tunnel` — 이 패턴의 GEM-LLM 특화 사례 (master/n1 운영)
+- `cloudflare-tunnel-ssh-access-pattern` — SSH ProxyCommand 패턴 (K8s pod 친화)
+- `pod-process-autostart-pattern` — cloudflared 자동 시작
+- `playbook-authoring-pattern` — 절차서 작성 패턴
 
 ## 메모
 
