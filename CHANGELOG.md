@@ -9,6 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (현재 main 브랜치에 머지되었으나 아직 태깅되지 않은 변경사항이 여기에 누적됩니다.)
 
+## [0.8.0] - 2026-05-03
+
+큰 자산(라우팅 + cutover 패턴) 추가로 **minor 버전 ↑**.
+GEM-LLM v8 (76 users, 책 18장 확장 보강) 와 동일 사이클.
+
+### Added
+- `multi-llm-routing-pattern` skill — Gateway 모델 라우팅 5 패턴
+  (정적 매핑 / weighted load balancing / fallback 체인 / 사용자·플랜별 / A/B canary;
+  GEM-LLM Gateway `upstream_map` 정적 매핑이 `qwen2.5-coder-32b → :8001`,
+  `qwen3-coder-30b → :8002` 로 28일 + 100동접 부하 통과한 사례 일반화;
+  단계적 확장 가이드 — 정적 → weighted → fallback → 사용자 플랜 → A/B 카나리 5 단계,
+  외부 provider(OpenAI/Anthropic) + 자체 vLLM 혼합 라우팅,
+  헤더 / 모델 ID / 사용자 키 기반 분기 매트릭스,
+  실패 모드 — upstream 한 대 down 시 fallback timeout 설계,
+  templates/ — FastAPI router 패턴, weighted random 헬퍼, fallback wrapper)
+- `blue-green-deployment-pattern` skill — LLM 서빙 무중단 cutover 패턴
+  (이전 v0.7.x 사이클에서 작성됨, **v0.8.0 에서 CHANGELOG 카탈로그 정리**;
+  격리 venv(`/home/jovyan/vllm-020-env`)에서 새 버전 검증 → 새 포트 부팅 →
+  헬스체크 + 토큰 echo → 게이트웨이 upstream atomic switch → 5분 관찰 →
+  blue 정리 / 이상 시 즉시 rollback;
+  GEM-LLM vLLM 0.19→0.20 cutover 자산화 — `scripts/cutover-vllm-020.sh` 185줄(10단계),
+  `scripts/rollback-vllm-019.sh` 65줄, 실측 다운타임 약 3분;
+  K8s 환경 deployment / service selector 전환 매핑 — bare-metal vs cluster 두 시나리오,
+  templates/cutover.sh.template + rollback.sh.template — 단계별 검증 게이트)
+
+### Changed
+- `install.sh` REGISTRY **44 → 46 entries** (45 skills + 1 command) — 신규 2개 추가
+  (`multi-llm-routing-pattern`, `blue-green-deployment-pattern`)
+
+### Stats
+- 누적 commits since v0.7.0: 22+
+- CI: validate.yml + atomic commit check, 41+ run all green
+- GEM-LLM 동기화: STATUS v8 (76 users, 책 18장 보강, claude-skills 46 반영)
+
 ## [0.7.3] - 2026-05-02
 
 ### Added
@@ -277,7 +311,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - GitHub에서 선택한 skill만 다운로드 (전체 repo clone 불필요)
   - `./install.sh --list` 로 사용 가능한 skill 목록 표시
 
-[Unreleased]: https://github.com/USER/claude-skills/compare/v0.7.3...HEAD
+[Unreleased]: https://github.com/USER/claude-skills/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/USER/claude-skills/compare/v0.7.3...v0.8.0
 [0.7.3]: https://github.com/USER/claude-skills/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/USER/claude-skills/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/USER/claude-skills/compare/v0.7.0...v0.7.1
