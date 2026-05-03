@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (현재 main 브랜치에 머지되었으나 아직 태깅되지 않은 변경사항이 여기에 누적됩니다.)
 
+## [0.8.3] — 2026-05-03
+
+### Added
+- `production-postmortem-pattern` skill — 7-section + blameless + 액션 아이템 + 책 case 통합
+- `shell-cli-dispatch-pattern` skill — bash sub-command dispatcher 정형 (case 19에서 추출)
+
+### Notes
+- REGISTRY: 49 → **51 entries**
+- gem-llm 5월 3일 라운드에서 추출 (case 19 silent bug postmortem 사례)
+- atomic commit hook 검증 완료 (race condition 자동 해결 입증)
+- (예정) `api-contract-testing-pattern` 추가 시 v0.8.4
+
 ## [0.8.2] — 2026-05-03
 
 ### Added
