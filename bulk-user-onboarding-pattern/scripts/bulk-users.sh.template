@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# bulk-users.sh — CSV 일괄 사용자 등록 (idempotent + 1회 캐싱 + 3카운터)
+#
+# Usage:
+#   API_BASE=https://api.example.com \
+#   ADMIN_TOKEN=xxx \
+#     ./bulk-users.sh users.csv
+#
+#   ./bulk-users.sh --dry-run users.csv     # API call 없이 카운터만 계산
+#
+# CSV 형식 — username,email,plan,[device_label]
+#   `#` 시작은 주석, 빈 줄은 skip.
+set -euo pipefail
+
+: "${API_BASE:?API_BASE required (e.g. https://api.example.com)}"
+: "${ADMIN_TOKEN:?ADMIN_TOKEN required}"
+
+DRY_RUN=0
+if [ "${1:-}" = "--dry-run" ]; then
+  DRY_RUN=1
+  shift
+fi
+
+CSV="${1:?usage: bulk-users.sh [--dry-run] <csv>}"
+[ -r "$CSV" ] || { echo "ERROR: cannot read $CSV" >&2; exit 1; }
+
+api() {
+  local method="$1" path="$2"; shift 2
+  curl -sS -X "$method" \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -H "Content-Type: application/json" \
+    "$API_BASE$path" "$@"
+}
+
+# 1회 list-users → in-memory set
+EXISTING=$(api GET /admin/users | jq -r '.[].username' | tr '\n' ' ')
+
+new_count=0
+dup_count=0
+fail_count=0
+total=0
+
+while IFS=',' read -r u e p label || [ -n "$u" ]; do
+  # trim CR (CRLF 안전)
+  u="${u%$'\r'}"; e="${e%$'\r'}"; p="${p%$'\r'}"; label="${label:-}"; label="${label%$'\r'}"
+
+  # 주석/빈 줄 skip
+  [ -z "$u" ] && continue
+  case "$u" in \#*) continue ;; esac
+
+  total=$((total + 1))
+
+  # 중복 검사 (whitespace 패딩으로 부분 일치 방지)
+  case " $EXISTING " in
+    *" $u "*) dup_count=$((dup_count + 1)); continue ;;
+  esac
+
+  if [ "$DRY_RUN" = 1 ]; then
+    new_count=$((new_count + 1))
+    continue
+  fi
+
+  body=$(jq -nc --arg u "$u" --arg e "$e" --arg p "${p:-free}" \
+    '{username:$u, email:$e, plan:$p}')
+
+  if resp=$(api POST /admin/users -d "$body" 2>/dev/null); then
+    new_count=$((new_count + 1))
+    USER_ID=$(echo "$resp" | jq -r '.id // empty')
+    # 옵션: device_label 이 있으면 키 발급
+    if [ -n "$label" ] && [ -n "$USER_ID" ]; then
+      key_body=$(jq -nc --arg n "$label" '{name:$n}')
+      api POST "/admin/users/$USER_ID/keys" -d "$key_body" \
+        | jq -r '.raw_key // empty' >> keys-issued.txt || true
+    fi
+  else
+    fail_count=$((fail_count + 1))
+    echo "FAIL: $u" >&2
+  fi
+done < "$CSV"
+
+echo
+echo "=== bulk-users 결과 ==="
+echo "  총: $total"
+echo "  신규 추가: $new_count"
+echo "  중복 skip: $dup_count"
+echo "  실패: $fail_count"
+[ "$DRY_RUN" = 1 ] && echo "  (dry-run — API call 없음)"
+
+# fail 이 있으면 non-zero exit (CI/cron 감지)
+[ "$fail_count" -eq 0 ]
