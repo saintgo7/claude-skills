@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (현재 main 브랜치에 머지되었으나 아직 태깅되지 않은 변경사항이 여기에 누적됩니다.)
 
+## [0.8.5] — 2026-05-03
+
+### Added
+- `cloudflare-tunnel-ssh-access-pattern` skill — SSH via Cloudflare Tunnel (cloudflared access ssh ProxyCommand). K8s pod / no-public-IP 외부 접속 패턴, gem-llm 3노드(master/n1/n3) 검증.
+- `pod-process-autostart-pattern` skill — K8s pod / systemd-less idempotent 자동 시작 (~/.bashrc 가드 + s6 + supervisord + lifecycle.postStart).
+- `playbook-authoring-pattern` skill — 4-tuple([목적][명령][기대출력][실패복구]) 절차서 작성 일반화.
+
+### Changed
+- `cloudflare-tunnel-setup` — SSH 라우팅 섹션 + 관련 skill cross-reference 추가.
+
+### Notes
+- REGISTRY: 54 → **57 entries**
+- gem-llm SSH 외부접속 doc v2(1193 lines, v1 438 → v2 1193 +172%) 작성 사례에서 추출.
+- 책 case 4(master→n1 SSH HTTP-only)의 일반화된 해결 패턴.
+
 ## [0.8.4] — 2026-05-03
 
 ### Added

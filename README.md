@@ -2,9 +2,9 @@
 
 Curated collection of Claude Code skills — bilingual research/code projects, LLM serving infrastructure, exam operations, technical book authoring.
 
-> Battle-tested in [GEM-LLM](https://github.com/saintgo7/gem-llm) (Qwen Coder dual-model coding assistant on 8×B200, 55h autonomous operation, 21 production cases) and operational research projects.
+> Battle-tested in [GEM-LLM](https://github.com/saintgo7/gem-llm) (Qwen Coder dual-model coding assistant on 8×B200, ~56h autonomous operation, 21 production cases) and operational research projects.
 
-**v0.8.4** — 54 entries, atomic commit hook + CI 검증, install.sh sparse checkout.
+**v0.8.5** — 57 entries, atomic commit hook + CI 검증, install.sh sparse checkout.
 
 ## 카탈로그 분포
 
@@ -12,7 +12,7 @@ Curated collection of Claude Code skills — bilingual research/code projects, L
 |---|---|---|
 | 메타 (skill 작성/카탈로그 자체) | 3 | claude-code-skill-authoring 등 |
 | 운영 (supervisor / cutover / migration) | 5 | postgres-migration-from-sqlite, blue-green-deployment 등 |
-| 패턴 (재사용 가능 일반 패턴) | ~25 | fastapi-async-patterns, multi-agent-autonomous-loop, html-static-dashboard 등 |
+| 패턴 (재사용 가능 일반 패턴) | ~28 | fastapi-async-patterns, multi-agent-autonomous-loop, html-static-dashboard, pod-process-autostart, cloudflare-tunnel-ssh-access, playbook-authoring 등 |
 | 인프라 (vLLM / Cloudflare / k8s) | 5 | vllm-bootstrap, cloudflare-tunnel-setup, k8s-pod-autostart 등 |
 | 저작 (한/영 책 + 논문 + 블로그) | 3 | bilingual-book-authoring, korean-tech-blog-authoring 등 |
 | **gem-llm 직접 운영** | **11** | gem-llm-overview / -supervisor / -admin-cli / -load-test / -troubleshooting / -cli-client / -vllm-debug / -gateway-debug / -deploy-vllm / -test-inference / -build-docs |
@@ -32,6 +32,9 @@ Curated collection of Claude Code skills — bilingual research/code projects, L
 | [`mermaid-diagram-authoring`](mermaid-diagram-authoring/) | skill | Mermaid 다이어그램 카탈로그 + SVG 빌드 |
 | [`claude-code-skill-authoring`](claude-code-skill-authoring/) | skill | skill 자체 작성 메타 |
 | [`cloudflare-tunnel-setup`](cloudflare-tunnel-setup/) | skill | Cloudflare Tunnel 셋업 + SSH ProxyCommand |
+| [`cloudflare-tunnel-ssh-access-pattern`](cloudflare-tunnel-ssh-access-pattern/) | skill | SSH via Cloudflare Tunnel (ProxyCommand, no-public-IP) |
+| [`pod-process-autostart-pattern`](pod-process-autostart-pattern/) | skill | K8s pod / systemd-less idempotent autostart |
+| [`playbook-authoring-pattern`](playbook-authoring-pattern/) | skill | 4-tuple([목적][명령][기대출력][실패복구]) 절차서 작성 |
 | [`vllm-bootstrap`](vllm-bootstrap/) | skill | vLLM 처음부터 부팅 가이드 (13 실패 패턴) |
 | [`vllm-tool-calling`](vllm-tool-calling/) | skill | vLLM tool-call-parser 운영 |
 | [`llm-serving-performance-tuning`](llm-serving-performance-tuning/) | skill | LLM 서빙 성능 튜닝 (TP/MoE/quantization) |
