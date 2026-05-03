@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (현재 main 브랜치에 머지되었으나 아직 태깅되지 않은 변경사항이 여기에 누적됩니다.)
 
+## [0.8.1] — 2026-05-03
+
+### Added
+- `concurrent-load-testing-pattern` skill — locust + asyncio.gather 일반화 (5 파일, 183-line SKILL + 2 templates)
+
+### Notes
+- REGISTRY: 46 → **47 entries**
+- 검증된 부하 패턴 5종 (50/100/200 동접 + 16-keys 분배 + p99 SLO)
+- gem-llm 5월 3일 라운드에서 추출 (scaling-bench 16 keys × 7 p99 -7.6%, 16 × 13 p99 -20%)
+
 ## [0.8.0] - 2026-05-03
 
 큰 자산(라우팅 + cutover 패턴) 추가로 **minor 버전 ↑**.
