@@ -1,0 +1,83 @@
+# QUICKSTART (5 minutes)
+
+신규 개발자가 `git clone` 부터 첫 hello world 까지 5분 안에 도달.
+
+## Prerequisites
+
+- OS: Linux / macOS (Windows = WSL2)
+- Python: 3.11+
+- Disk: <X> GB free
+- (선택) GPU / API key / etc.
+
+확인:
+
+```bash
+python --version    # 3.11+
+df -h .             # <X> GB free
+```
+
+## Step 1 (1 min) — Clone
+
+[목적] 소스 받기.
+
+```bash
+git clone <repo>
+cd <project>
+```
+
+[기대 출력] 마지막 줄에 `done.` / 디렉토리에 `README.md`, `install.sh` 보임.
+
+[실패시] `Permission denied (publickey)` → SSH key 등록 또는 HTTPS URL 사용.
+
+## Step 2 (2 min) — Install
+
+[목적] 의존성 설치.
+
+```bash
+./install.sh           # 또는 pip install -e .
+```
+
+[기대 출력] `Successfully installed ...` 마지막 줄.
+
+[실패시] `error: externally-managed-environment` → `python -m venv .venv && source .venv/bin/activate` 후 재시도.
+
+## Step 3 (1 min) — Run
+
+[목적] 서비스 기동.
+
+```bash
+./bin/start.sh         # 또는 python -m <module>
+```
+
+[기대 출력] `Listening on http://0.0.0.0:8080` (백그라운드 / 포어그라운드).
+
+[실패시] `Address already in use` → `lsof -i :8080` 으로 점유 프로세스 확인.
+
+## Step 4 (1 min) — Verify
+
+[목적] 정상 동작 한 줄 검증.
+
+```bash
+curl http://localhost:8080/healthz
+# expected: HTTP 200, "ok"
+```
+
+성공이면 다음으로.
+
+## Trouble?
+
+| 증상 | 해결 |
+|---|---|
+| `command not found` | PATH 확인, `./install.sh` 재실행 |
+| `port in use` | `lsof -i :<port>` → 점유 종료 |
+| `permission denied` | `chmod +x bin/*.sh` |
+| `module not found` | venv 활성화 확인 |
+| 그 외 | [docs/troubleshooting.md](docs/troubleshooting.md) |
+
+## 다음
+
+성공했으면:
+
+- [INDEX.md](INDEX.md) — 전체 자산 카탈로그
+- [docs/](docs/) — 운영 / 아키텍처 상세
+- [CONTRIBUTING.md](CONTRIBUTING.md) — 첫 PR 가이드

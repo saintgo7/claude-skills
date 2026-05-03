@@ -80,6 +80,7 @@ REGISTRY=(
   "cloudflare-tunnel-ssh-access-pattern|skill|Cloudflare Tunnel + cloudflared access ssh ProxyCommand (K8s pod / no-public-IP) — gem-llm 3노드 검증"
   "playbook-authoring-pattern|skill|Claude Code / 사람 실행 가능한 절차서 작성 (4-tuple [목적][명령][기대출력][실패복구] + pre-flight + idempotent + 트러블슈팅 표) — gem-llm SSH doc v2 검증"
   "multi-agent-git-collaboration-pattern|skill|멀티 에이전트 동시 git race 안전 회복 (atomic commit + Edit Re-Read + git pull --rebase, force push 0) — gem-llm 56h 76 라운드 검증"
+  "developer-onboarding-doc-pattern|skill|신규 개발자 0→실행 onboarding (README + QUICKSTART + INDEX 4-tier 구조 + 5분 검증) — gem-llm 검증"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────
