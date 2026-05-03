@@ -1,0 +1,19 @@
+# === cloudflared 노드별 터널 config (장애 격리: 노드당 1 터널) ===
+# 치환 토큰: <TUNNEL_ID> <HOME> <NODE> <DOMAIN>
+# 검증: cloudflared tunnel ingress validate
+
+tunnel: <TUNNEL_ID>
+credentials-file: <HOME>/.cloudflared/<TUNNEL_ID>.json
+
+# 이 터널이 받는 트래픽 목록 (호스트명 → 로컬 서비스)
+ingress:
+  # SSH 라우팅 — 외부에서 ssh <NODE> 시 cloudflared access ssh ProxyCommand 가 여기로
+  - hostname: <NODE>-ssh.<DOMAIN>
+    service: ssh://localhost:2222
+
+  # (선택) 같은 터널에 HTTP 서비스도 묶을 때 — 호스트명 다르면 충돌 X
+  # - hostname: <NODE>.<DOMAIN>
+  #   service: http://localhost:8080
+
+  # catch-all — 매칭 안 된 요청은 404 (반드시 마지막)
+  - service: http_status:404

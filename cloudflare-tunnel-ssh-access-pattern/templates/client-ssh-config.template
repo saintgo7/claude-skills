@@ -1,0 +1,29 @@
+# === 외부 클라이언트 ~/.ssh/config (Cloudflare Tunnel 경유) ===
+# 치환 토큰: <NODE1> <NODE2> <NODE3> <USER> <DOMAIN>
+# 사전 조건: cloudflared 설치 + cloudflared login 1회
+# 권한: chmod 600 ~/.ssh/config
+
+# ====================================================================
+# <DOMAIN> 클러스터 — Cloudflare Tunnel 경유 SSH
+# ====================================================================
+Host <NODE1> <NODE2> <NODE3>
+  User <USER>
+  Port 2222
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+  # %h 가 호스트별 자동 치환 → N 노드 한 블록 처리
+  ProxyCommand cloudflared access ssh --hostname %h-ssh.<DOMAIN>
+  ServerAliveInterval 60
+  ServerAliveCountMax 3
+  # known_hosts 분리 — 다른 ssh 와 충돌 방지
+  UserKnownHostsFile ~/.ssh/known_hosts.<DOMAIN>
+
+# 별도 HostName 매핑 (선택) — 위 Host 블록의 별칭만으로 충분하면 생략
+Host <NODE1>
+  HostName <NODE1>
+
+Host <NODE2>
+  HostName <NODE2>
+
+Host <NODE3>
+  HostName <NODE3>

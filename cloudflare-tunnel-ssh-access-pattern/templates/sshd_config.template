@@ -1,0 +1,49 @@
+# === 사용자 영역 sshd_config (root 권한 불필요, 2222 포트) ===
+# 치환 토큰: <USER> <HOME>
+# 검증: /usr/sbin/sshd -t -f <HOME>/.ssh/sshd_config
+
+# 포트 — unprivileged (root 없이 binding 가능)
+Port 2222
+ListenAddress 0.0.0.0
+
+# 호스트 키 — 영속 볼륨 (재시작 후 known_hosts 회귀 방지)
+HostKey <HOME>/.ssh/host_ed25519_key
+
+# PID 파일 — idempotent 재시작
+PidFile <HOME>/.ssh/sshd.pid
+
+# 인증 — 비밀번호 금지, ed25519 키만
+PasswordAuthentication no
+PubkeyAuthentication yes
+ChallengeResponseAuthentication no
+KbdInteractiveAuthentication no
+AuthorizedKeysFile <HOME>/.ssh/authorized_keys
+
+# 보안 — root 차단, 화이트리스트
+PermitRootLogin no
+AllowUsers <USER>
+MaxAuthTries 3
+LoginGraceTime 30
+StrictModes yes
+IgnoreRhosts yes
+HostbasedAuthentication no
+GSSAPIAuthentication no
+UsePAM no
+X11Forwarding no
+AllowAgentForwarding no
+AllowTcpForwarding yes
+
+# 세션 유지 — Cloudflare 터널 끊김 감지
+ClientAliveInterval 60
+ClientAliveCountMax 3
+
+# 로그
+LogLevel INFO
+SyslogFacility AUTH
+
+# 환경 — .bashrc PATH 등 적용
+PermitUserEnvironment yes
+AcceptEnv LANG LC_*
+
+# subsystem (sftp/scp) — 경로 OS 별 다름. 없으면 이 줄 삭제
+Subsystem sftp /usr/lib/openssh/sftp-server
