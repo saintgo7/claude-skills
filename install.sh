@@ -63,6 +63,7 @@ REGISTRY=(
   "env-isolation-pattern|skill|운영 환경변수 → 테스트 누설 방지 (case 18 일반화) — explicit unset + unconditional override + container isolation"
   "llm-serving-performance-tuning|skill|LLM 서빙 (vLLM + FastAPI) 성능 튜닝 6단계 — GEM-LLM 50/100/200동접 검증 (1282 tok/s, p99 9.1s)"
   "mermaid-diagram-authoring|skill|Mermaid 다이어그램 작성 + Pandoc 통합 5단계 (CATALOG → extract → SVG → Lua filter → 본문 참조) — 40 다이어그램 검증"
+  "api-key-lifecycle-pattern|skill|API key 발급/회수/검증 라이프사이클 (gem_live_<32hex>, prefix 8자 lookup, sha256+salt)"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────

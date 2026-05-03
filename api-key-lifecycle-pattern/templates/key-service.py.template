@@ -1,0 +1,100 @@
+"""API key 라이프사이클 service / API key lifecycle service.
+
+3 함수:
+  issue(user_id, name)      → raw_key 1회 반환 (이후 prefix 만 노출)
+  verify(authorization)     → prefix lookup + sha256 hash 비교 → user_id
+  revoke(key_id, by)        → revoked=True (DELETE 안 함)
+
+키 형식: gem_live_<32 hex>  (prefix 9자 + body 32자, 총 41자)
+검색: body 첫 8자를 key_prefix 컬럼 인덱스로 lookup → hash 비교
+"""
+from __future__ import annotations
+
+import hashlib
+import hmac
+import os
+import secrets
+from dataclasses import dataclass
+from datetime import datetime
+
+import ulid
+from fastapi import HTTPException
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+
+# TODO: 패키지 경로/모델명 프로젝트에 맞게 변경
+from gateway.models import ApiKey, AuditLog
+
+SALT = os.environ["API_KEY_SALT"]  # ← raw key 와 다른 secret. 운영 중 변경 금지.
+KEY_PREFIX = "gem_live_"           # ← 서비스/환경 마커. test 환경은 gem_test_
+PREFIX_LEN = 8                      # body 첫 N 자를 검색용 prefix 로
+
+
+@dataclass
+class IssuedKey:
+    id: str
+    raw_key: str   # ⚠️ 발급 응답에만 — DB 미저장
+    prefix: str
+    name: str | None
+
+
+def _hash(raw: str) -> str:
+    """SHA256(salt + raw) hex digest. argon2 대신 SHA256 — 인덱스 비교 가능 + 128-bit
+    랜덤 키이므로 brute-force 무의미."""
+    return hashlib.sha256(f"{SALT}{raw}".encode()).hexdigest()
+
+
+async def issue(session: AsyncSession, user_id: str, name: str | None = None) -> IssuedKey:
+    """raw_key 1회 노출 — 이후 prefix 만. token_hex(16) = 128-bit 엔트로피."""
+    body = secrets.token_hex(16)
+    raw = f"{KEY_PREFIX}{body}"
+    prefix = body[:PREFIX_LEN]
+    key_id = str(ulid.new())
+
+    session.add(ApiKey(
+        id=key_id, user_id=user_id, key_prefix=prefix,
+        key_hash=_hash(raw), name=name,
+    ))
+    await session.commit()
+    return IssuedKey(id=key_id, raw_key=raw, prefix=prefix, name=name)
+
+
+async def verify(session: AsyncSession, authorization: str) -> str:
+    """auth middleware. 형식 → prefix lookup → hash 비교 → user_id 반환."""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(401, "missing_bearer")
+    raw = authorization[7:].strip()
+    if not raw.startswith(KEY_PREFIX) or len(raw) != len(KEY_PREFIX) + 32:
+        raise HTTPException(401, "invalid_format")
+
+    body = raw[len(KEY_PREFIX):]
+    prefix = body[:PREFIX_LEN]
+    hash_ = _hash(raw)
+
+    row = await session.scalar(
+        select(ApiKey).where(
+            ApiKey.key_prefix == prefix,
+            ApiKey.revoked.is_(False),
+        )
+    )
+    # prefix 충돌은 sha256 hash 로 최종 판정 (compare_digest 로 timing attack 회피)
+    if row is None or not hmac.compare_digest(row.key_hash, hash_):
+        raise HTTPException(401, "invalid_or_revoked")
+
+    # last_used 갱신은 별도 트랜잭션 (응답 차단 X — fire-and-forget 권장)
+    await session.execute(
+        update(ApiKey).where(ApiKey.id == row.id).values(last_used=datetime.utcnow())
+    )
+    await session.commit()
+    return row.user_id
+
+
+async def revoke(session: AsyncSession, key_id: str, by_user_id: str) -> None:
+    """DELETE 안 함 — 감사 로그 + 사후 forensic 위해 revoked=True 만."""
+    await session.execute(
+        update(ApiKey)
+        .where(ApiKey.id == key_id)
+        .values(revoked=True, revoked_at=datetime.utcnow())
+    )
+    session.add(AuditLog(action="revoke_key", actor=by_user_id, target=key_id))
+    await session.commit()
