@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (현재 main 브랜치에 머지되었으나 아직 태깅되지 않은 변경사항이 여기에 누적됩니다.)
 
+## [0.7.2] - 2026-05-02
+
+### Added
+- `mermaid-diagram-authoring` skill — Mermaid 다이어그램 작성 + Pandoc 통합 5단계 패턴
+  (CATALOG → extract → SVG 사전 렌더 → Lua filter 라우팅 → 본문 참조;
+  GEM-LLM 책 / 매뉴얼 / 논문 6 타깃에서 **40 다이어그램 정식 SVG (Stub 0)** 검증;
+  flowchart / sequenceDiagram / classDiagram / erDiagram / stateDiagram / gantt
+  6 타입 권장 사용, chromium puppeteer 캐시 디렉토리 함정,
+  Pandoc Lua filter 로 `<!-- diagram:NAME -->` 마커를 figure 로 치환,
+  SVG vs PNG 선택 기준 (벡터 유지 vs LaTeX/Word 호환),
+  한글 라벨 폰트 임베딩, ID 충돌 회피, 회귀 검증 체크리스트)
+- `llm-serving-performance-tuning` skill — vLLM + FastAPI 게이트웨이 성능 튜닝 6단계 운영 가이드
+  (1) baseline 측정 (RPS / TTFT / TPOT / p50/p95/p99 / tok/s),
+  (2) DB pool 튜닝 (`pool_size=50, max_overflow=200, pool_timeout=10`),
+  (3) SQLite write-lock (`busy_timeout=30s`) + PG 전환 시점,
+  (4) vLLM 옵션 (`--max-num-seqs`, `--gpu-memory-utilization`, prefix caching),
+  (5) Gateway async 함정 (lifespan, Semaphore, async DB),
+  (6) 30분 health monitor + GPU/RAM 누수 검증;
+  GEM-LLM **50/100/200동접 검증 — 1282 tok/s, p99 9.1s 베이스라인** + 100동접
+  재검증 RPS +14.8% / p99 −11.6% 재현 가능)
+
+### Changed
+- `install.sh` REGISTRY **39 → 41 entries** (40 skills + 1 command) — 신규 2개 추가
+
 ## [0.7.1] - 2026-05-02
 
 ### Added
@@ -217,7 +241,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - GitHub에서 선택한 skill만 다운로드 (전체 repo clone 불필요)
   - `./install.sh --list` 로 사용 가능한 skill 목록 표시
 
-[Unreleased]: https://github.com/USER/claude-skills/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/USER/claude-skills/compare/v0.7.2...HEAD
+[0.7.2]: https://github.com/USER/claude-skills/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/USER/claude-skills/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/USER/claude-skills/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/USER/claude-skills/compare/v0.5.0...v0.6.0
