@@ -1,0 +1,159 @@
+#!/bin/bash
+# 정적 HTML 헬스 대시보드 — Grafana 부재 대안
+# 사용: bash dashboard.sh [output.html]
+# 의존성: bash, curl, awk, sed (필수) / nvidia-smi, jq (옵션)
+#
+# 환경변수:
+#   PROJECT_ROOT     프로젝트 루트 (default: $PWD)
+#   TITLE            페이지 제목 (default: "Health Dashboard")
+#   METRICS_URL      Prometheus /metrics endpoint (default: http://localhost:8080/metrics)
+#   METRICS_PREFIX   메트릭 grep 접두사 정규식 (default: '^(my_app_)')
+#   TUNNEL_URL       외부 헬스 endpoint (default: 비어 있음 — 섹션 생략)
+#   STYLE_FILE       CSS 파일 경로 (default: 인라인 fallback)
+set -euo pipefail
+
+PROJECT_ROOT="${PROJECT_ROOT:-$PWD}"
+TITLE="${TITLE:-Health Dashboard}"
+METRICS_URL="${METRICS_URL:-http://localhost:8080/metrics}"
+METRICS_PREFIX="${METRICS_PREFIX:-^(my_app_)}"
+TUNNEL_URL="${TUNNEL_URL:-}"
+STYLE_FILE="${STYLE_FILE:-}"
+OUTPUT="${1:-$PROJECT_ROOT/health.html}"
+TS=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+HOSTNAME=$(hostname)
+
+mkdir -p "$(dirname "$OUTPUT")"
+
+# ── XSS 회피 — 외부 입력은 모두 통과 ────────────────────────────────
+html_escape() {
+  sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'
+}
+
+# ── 데이터 수집 ────────────────────────────────────────────────────
+
+# 1. 프로세스 / supervisor
+if [ -x "$PROJECT_ROOT/scripts/supervisor.sh" ]; then
+  SUPERVISOR=$(bash "$PROJECT_ROOT/scripts/supervisor.sh" status 2>&1 | html_escape || true)
+else
+  SUPERVISOR=$(ps -eo pid,pcpu,pmem,comm --sort=-pcpu | head -10 | html_escape)
+fi
+
+# 2. GPU 테이블
+if command -v nvidia-smi >/dev/null 2>&1; then
+  GPU_TABLE=$(nvidia-smi --query-gpu=index,name,memory.used,memory.total,utilization.gpu,temperature.gpu \
+                         --format=csv,noheader,nounits 2>/dev/null \
+    | awk -F', ' 'BEGIN{print "<tr><th>#</th><th>Name</th><th>Mem (MB)</th><th>Util %</th><th>Temp °C</th></tr>"}
+                  {printf "<tr><td>%s</td><td>%s</td><td>%s/%s</td><td>%s</td><td>%s</td></tr>\n", $1,$2,$3,$4,$5,$6}')
+else
+  GPU_TABLE="<tr><td colspan=5>nvidia-smi 미가용</td></tr>"
+fi
+
+# 3. 시스템 리소스
+LOAD=$(uptime | awk -F'load average: ' '{print $2}' | html_escape)
+RAM=$(free -h | awk '/^Mem:/ {printf "%s used / %s total", $3, $2}')
+DISK=$(df -h / 2>/dev/null \
+  | tail -n +2 \
+  | awk 'BEGIN{print "<tr><th>Mount</th><th>Used</th><th>Avail</th><th>%</th></tr>"}
+         {printf "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n", $6,$3,$4,$5}')
+
+# 4. /metrics (Prometheus 형식)
+METRICS="(metrics endpoint 미응답)"
+if curl -s -m 3 "$METRICS_URL" 2>/dev/null | grep -qE "$METRICS_PREFIX"; then
+  METRICS=$(curl -s -m 3 "$METRICS_URL" \
+    | grep -E "$METRICS_PREFIX" \
+    | head -20 \
+    | html_escape)
+fi
+
+# 5. 외부 endpoint
+TUNNEL_LINE=""
+if [ -n "$TUNNEL_URL" ]; then
+  TS_STATUS=$(curl -s -m 5 -o /dev/null -w "%{http_code} (%{time_total}s)" "$TUNNEL_URL" 2>/dev/null || echo "fail")
+  case "$TS_STATUS" in
+    200*) CLS="green" ;;
+    fail|000*) CLS="red" ;;
+    *) CLS="yellow" ;;
+  esac
+  ESC_URL=$(printf '%s' "$TUNNEL_URL" | html_escape)
+  ESC_STATUS=$(printf '%s' "$TS_STATUS" | html_escape)
+  TUNNEL_LINE="<h2>외부 Endpoint</h2><p>$ESC_URL &rarr; <span class=\"$CLS\">$ESC_STATUS</span></p>"
+fi
+
+# 6. git log (있으면)
+RECENT_COMMITS="(git 미가용)"
+if [ -d "$PROJECT_ROOT/.git" ]; then
+  RECENT_COMMITS=$(cd "$PROJECT_ROOT" && git log --oneline -5 2>/dev/null | html_escape || echo "(git error)")
+fi
+
+# 7. 인라인 CSS 또는 외부 파일
+if [ -n "$STYLE_FILE" ] && [ -f "$STYLE_FILE" ]; then
+  STYLE_BLOCK="<style>$(cat "$STYLE_FILE")</style>"
+else
+  STYLE_BLOCK='<style>
+    body{font-family:monospace;max-width:1400px;margin:20px auto;padding:20px;background:#1e1e2e;color:#cdd6f4}
+    h1{color:#89b4fa}h2{color:#f9e2af;border-bottom:1px solid #45475a;padding-bottom:4px}
+    table{border-collapse:collapse;width:100%;margin:10px 0}
+    th{background:#313244;padding:6px;text-align:left}td{padding:6px;border-bottom:1px solid #45475a}
+    pre{background:#313244;padding:10px;border-radius:4px;overflow-x:auto;white-space:pre-wrap}
+    .green{color:#a6e3a1}.red{color:#f38ba8}.yellow{color:#f9e2af}
+    .meta{color:#6c7086;font-size:0.9em}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    @media(max-width:800px){.grid{grid-template-columns:1fr}}
+    a{color:#89b4fa}
+  </style>'
+fi
+
+ESC_TITLE=$(printf '%s' "$TITLE" | html_escape)
+ESC_HOST=$(printf '%s' "$HOSTNAME" | html_escape)
+
+# ── HTML 출력 ──────────────────────────────────────────────────────
+cat > "$OUTPUT" <<HTML
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="refresh" content="300">
+<title>$ESC_TITLE</title>
+$STYLE_BLOCK
+</head>
+<body>
+
+<h1>$ESC_TITLE</h1>
+<p class="meta">Generated: $TS | Host: $ESC_HOST | <a href="javascript:location.reload()">Refresh</a></p>
+
+<div class="grid">
+
+<div>
+<h2>1. Supervisor / 프로세스</h2>
+<pre>$SUPERVISOR</pre>
+
+<h2>2. GPU</h2>
+<table>$GPU_TABLE</table>
+
+$TUNNEL_LINE
+</div>
+
+<div>
+<h2>5. 시스템 리소스</h2>
+<p>Load: $LOAD<br>RAM: $RAM</p>
+<table>$DISK</table>
+
+<h2>6. /metrics</h2>
+<pre>$METRICS</pre>
+
+<h2>7. 최근 commits</h2>
+<pre>$RECENT_COMMITS</pre>
+</div>
+
+</div>
+
+<hr style="border-color:#45475a;margin:30px 0;">
+<p class="meta">자동 재생성 권장: 5분마다 (cron 또는 supervisor hook). meta refresh 도 5분.</p>
+
+</body>
+</html>
+HTML
+
+echo "Dashboard generated: $OUTPUT"
+echo "  open file://$OUTPUT"
+echo "  cron 예시: */5 * * * * bash $(realpath "$0") /var/www/html/health.html"

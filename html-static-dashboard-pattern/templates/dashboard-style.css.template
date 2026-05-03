@@ -1,0 +1,77 @@
+/* Catppuccin Mocha (dark) / Latte (light) — 대시보드용 미니멀 테마
+   사용: STYLE_FILE=$PWD/dashboard-style.css bash dashboard.sh */
+
+:root {
+  --bg: #1e1e2e;
+  --bg-alt: #313244;
+  --border: #45475a;
+  --fg: #cdd6f4;
+  --muted: #6c7086;
+  --accent: #89b4fa;
+  --warn: #f9e2af;
+  --green: #a6e3a1;
+  --red: #f38ba8;
+  --yellow: #f9e2af;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #eff1f5;
+    --bg-alt: #ccd0da;
+    --border: #bcc0cc;
+    --fg: #4c4f69;
+    --muted: #6c6f85;
+    --accent: #1e66f5;
+    --warn: #df8e1d;
+    --green: #40a02b;
+    --red: #d20f39;
+    --yellow: #df8e1d;
+  }
+}
+
+body {
+  font-family: ui-monospace, "JetBrains Mono", Menlo, monospace;
+  max-width: 1400px;
+  margin: 20px auto;
+  padding: 20px;
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.4;
+}
+
+h1 { color: var(--accent); margin-top: 0; }
+h2 { color: var(--warn); border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-top: 24px; }
+
+table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+th { background: var(--bg-alt); padding: 6px 8px; text-align: left; }
+td { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+
+pre {
+  background: var(--bg-alt);
+  padding: 10px;
+  border-radius: 4px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.green  { color: var(--green); }
+.red    { color: var(--red); font-weight: bold; }
+.yellow { color: var(--yellow); }
+.meta   { color: var(--muted); font-size: 0.9em; }
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 800px) {
+  .grid { grid-template-columns: 1fr; }
+  body  { padding: 10px; }
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+hr { border: none; border-top: 1px solid var(--border); margin: 30px 0; }
