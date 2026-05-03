@@ -1,0 +1,37 @@
+# K8s CronJob manifest template
+# Replace placeholders: <service>, <namespace>, <schedule>, <image>, <command>
+#
+# Apply:
+#   kubectl apply -f cronjob-<service>.yaml -n <namespace>
+# Verify:
+#   kubectl get cronjob -n <namespace>
+#   kubectl get jobs --watch -n <namespace>
+#
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: <service>-cron
+  namespace: <namespace>
+spec:
+  schedule: "<schedule>"            # e.g. "0 3 * * *"  (UTC 기준; KST = UTC+9)
+  timeZone: "Asia/Seoul"            # k8s 1.27+ 지원 (이전 버전은 schedule 자체를 UTC로)
+  concurrencyPolicy: Forbid         # 동시 실행 금지 (Allow / Forbid / Replace)
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 300      # 누락 시 5분 내까지만 만회
+  jobTemplate:
+    spec:
+      backoffLimit: 2               # 실패 시 최대 2회 재시도
+      activeDeadlineSeconds: 3600   # 1시간 초과 시 강제 종료
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: <service>
+            image: <image>
+            command: ["bash", "-lc"]
+            args:
+              - "<command>"         # e.g. /home/jovyan/myapp/scripts/backup-db.sh
+            resources:
+              requests: { cpu: "100m", memory: "256Mi" }
+              limits:   { cpu: "1",    memory: "1Gi" }

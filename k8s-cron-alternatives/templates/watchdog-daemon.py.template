@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+"""
+watchdog-daemon.py — in-pod cron alternative for K8s/container envs without crond.
+
+Edit JOBS, then run as long-running process (s6 service / supervisord / nohup).
+Logs to LOG_PATH; idempotent per-minute (won't double-fire within same minute).
+
+Cron field semantics: minute hour day-of-month month day-of-week (0=Sun, 7=Sun).
+Supports: '*', integer, comma list ('0,15,30'), step ('*/5'), range ('1-5').
+"""
+from __future__ import annotations
+import datetime as dt
+import logging
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+LOG_PATH = Path(os.environ.get("WATCHDOG_LOG", "/home/jovyan/logs/watchdog.log"))
+LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+logging.basicConfig(
+    filename=str(LOG_PATH),
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+
+# (name, cron-expr, shell-command)
+JOBS: list[tuple[str, str, str]] = [
+    ("backup-db",  "0 3 * * *",  "bash /home/jovyan/myapp/scripts/backup-db.sh"),
+    ("cve-watch",  "0 9 * * 1",  "bash /home/jovyan/myapp/scripts/cve-watcher.sh"),
+    ("health",     "*/5 * * * *", "bash /home/jovyan/myapp/scripts/health-check.sh"),
+]
+
+
+def _match(field: str, value: int) -> bool:
+    """Match a single cron field against an integer value."""
+    if field == "*":
+        return True
+    for token in field.split(","):
+        if "/" in token:
+            base, step = token.split("/", 1)
+            base = "0" if base in ("*", "") else base
+            try:
+                if (value - int(base)) % int(step) == 0 and value >= int(base):
+                    return True
+            except ValueError:
+                continue
+        elif "-" in token:
+            lo, hi = token.split("-", 1)
+            try:
+                if int(lo) <= value <= int(hi):
+                    return True
+            except ValueError:
+                continue
+        else:
+            try:
+                if int(token) == value:
+                    return True
+            except ValueError:
+                continue
+    return False
+
+
+def should_run(cron: str, now: dt.datetime) -> bool:
+    """Return True iff `now` matches the 5-field cron expression."""
+    parts = cron.split()
+    if len(parts) != 5:
+        return False
+    minute, hour, dom, month, dow = parts
+    # Sunday: cron allows 0 or 7
+    dow_val = now.isoweekday() % 7  # Mon=1..Sun=0
+    return (
+        _match(minute, now.minute)
+        and _match(hour, now.hour)
+        and _match(dom, now.day)
+        and _match(month, now.month)
+        and _match(dow, dow_val)
+    )
+
+
+def main() -> int:
+    logging.info("watchdog start (jobs=%d, log=%s)", len(JOBS), LOG_PATH)
+    last_fired: dict[str, str] = {}
+    while True:
+        now = dt.datetime.now()
+        key = now.strftime("%Y-%m-%d %H:%M")
+        for name, cron, cmd in JOBS:
+            if last_fired.get(name) == key:
+                continue  # already fired this minute
+            if should_run(cron, now):
+                logging.info("FIRE %s -> %s", name, cmd)
+                try:
+                    subprocess.Popen(cmd, shell=True)
+                    last_fired[name] = key
+                except Exception as e:
+                    logging.error("FAIL %s: %s", name, e)
+        # sleep until next minute boundary (avoid drift)
+        time.sleep(max(1, 60 - dt.datetime.now().second))
+
+
+if __name__ == "__main__":
+    sys.exit(main())
