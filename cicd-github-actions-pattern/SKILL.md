@@ -166,6 +166,28 @@ strategy:
 3. **workflow yaml 자체 변경 시 re-trigger 누설**: `.github/workflows/*.yml` 변경은 다음 push에서야 새 정의가 적용된다. PR이 자기 자신을 검증하려면 `pull_request` trigger 필수.
 4. **caching invalidation**: `requirements.txt` hash가 같으면 캐시 재사용 → lock 파일을 명시적으로 갱신해야 새 의존성이 반영된다.
 5. **timeout 미설정**: 무한 hang 시 GHA 기본 6시간까지 quota 소진. `timeout-minutes: 10` job 단위로 명시.
+6. **Python 3.12 default ctrace coverage 한계 (async/asyncio + httpx ASGI)**: Python 3.12 의 default ctrace coverage tool 이 async/await + httpx ASGI 라인 일부를 미계측한다. 실제로 도달된 라인이 missing 으로 표시됨. → `COVERAGE_CORE=sysmon` 환경변수로 PEP-669 sys.monitoring 사용 (gem-llm 라운드 99-100 발견, admin.py ctrace 60% → sysmon 100%).
+
+| 증상 | 원인 | 해결 |
+|------|------|------|
+| async route 일부 라인 missing | ctrace 한계 | `COVERAGE_CORE=sysmon` |
+| httpx ASGI test 라인 누락 | ctrace 한계 | `COVERAGE_CORE=sysmon` |
+| `pytest --cov-fail-under` 가 실측보다 낮게 fail | ctrace 한계 | `COVERAGE_CORE=sysmon` 후 게이트 재조정 |
+
+## 10-1. Python 3.12 async coverage — sysmon 적용 패턴
+
+```yaml
+- name: pytest --cov
+  env:
+    COVERAGE_CORE: sysmon
+  run: |
+    pytest src/ \
+      --cov=src/your_pkg \
+      --cov-report=term \
+      --cov-fail-under=85
+```
+
+**검증**: gem-llm coverage.yml (gateway/cli/admin-ui 3 job). ctrace 78.3% → sysmon 87~97% (admin-ui 97.41%, gateway 87.79%). 게이트는 실측치 -5pt 마진 유지 권장.
 
 ## 11. atomic commit 정책 (case CI 1 실패 일반화)
 
@@ -207,6 +229,7 @@ done
 | claude-skills `validate.yml` | 44 skill, 6 영역 검증 | 41 run, 1 transient failure (atomic commit 위반 1회 후 정책 enforce) |
 | gem-llm `pip-audit.yml` | weekly + push trigger | 첫 push 18s 성공, 이후 정기 회귀 |
 | atomic commit 정책 | claude-skills 30+ skill 추가 | 정책 enforce 후 사고 0건 |
+| gem-llm `coverage.yml` (sysmon) | Python 3.12 async, 3 job | ctrace 78.3% → sysmon 87~97%, 게이트 75/65/75 → 85/68/90 |
 
 `continue-on-error: true`를 pip-audit에 적용했더니 PR flow 차단 없이 CVE 인지 가능 — `dependency-vulnerability-fix` skill로 별도 처리하는 흐름이 안정.
 
