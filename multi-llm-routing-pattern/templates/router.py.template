@@ -1,0 +1,94 @@
+"""LLM 게이트웨이 라우터 / Multi-LLM gateway router.
+
+5 패턴:
+  static    — 모델 ID → URL 정적 매핑
+  weighted  — 같은 모델 여러 인스턴스 가중치 분산
+  fallback  — chain 순회 (5xx/network 만 fallback, 4xx 는 즉시 반환)
+  by_plan   — 사용자 플랜(free/pro/enterprise)으로 백엔드 선택
+  ab_test   — hash(user_id) 기반 sticky canary
+
+치환 변수:
+  <service>           — 서비스명 (예: gem-llm)
+  <plan_routing>      — by_plan 활성화 여부 (true/false)
+  <fallback_chain>    — fallback 활성화 여부 (true/false)
+"""
+from __future__ import annotations
+
+import random
+from dataclasses import dataclass, field
+from hashlib import sha256
+
+import httpx
+from fastapi import HTTPException
+
+
+@dataclass
+class RouterConfig:
+    # (1) 정적 매핑 — 가장 단순/흔함
+    static_map: dict[str, str] = field(default_factory=dict)
+
+    # (2) weighted — 같은 모델 여러 인스턴스
+    weighted_map: dict[str, list[tuple[str, float]]] = field(default_factory=dict)
+
+    # (3) fallback chain — primary 5xx/timeout → 다음 url
+    fallback_map: dict[str, list[str]] = field(default_factory=dict)
+
+    # (4) plan routing — user.plan → url
+    plan_map: dict[str, str] = field(default_factory=dict)
+
+    # (5) A/B canary — 비율 + new/stable url
+    canary_pct: int = 0                 # 0 ~ 100
+    canary_url: str | None = None
+    canary_stable: str | None = None
+
+
+class Router:
+    def __init__(self, cfg: RouterConfig) -> None:
+        self.cfg = cfg
+
+    def resolve(self, *, model: str, user_id: str | None = None,
+                user_plan: str | None = None) -> str:
+        # 우선순위: plan → canary → weighted → static
+        if user_plan and user_plan in self.cfg.plan_map:
+            return self.cfg.plan_map[user_plan]
+
+        if self.cfg.canary_url and user_id:
+            bucket = int(sha256(user_id.encode()).hexdigest(), 16) % 100
+            if bucket < self.cfg.canary_pct:
+                return self.cfg.canary_url
+            if self.cfg.canary_stable:
+                return self.cfg.canary_stable
+
+        if model in self.cfg.weighted_map:
+            urls, weights = zip(*self.cfg.weighted_map[model])
+            return random.choices(urls, weights=weights, k=1)[0]
+
+        if model in self.cfg.static_map:
+            return self.cfg.static_map[model]
+
+        raise HTTPException(400, f"unknown_model: {model}")
+
+    def chain(self, model: str) -> list[str]:
+        """fallback chain — 없으면 [primary] 단일 원소 list."""
+        if model in self.cfg.fallback_map:
+            return list(self.cfg.fallback_map[model])
+        return [self.resolve(model=model)]
+
+
+async def call_with_fallback(router: Router, model: str, payload: dict,
+                              client: httpx.AsyncClient) -> dict:
+    """fallback chain 순회. 4xx 는 즉시 raise, 5xx/network 만 다음 url 시도."""
+    last_err: Exception | None = None
+    for url in router.chain(model):
+        try:
+            r = await client.post(f"{url.rstrip('/')}/v1/chat/completions",
+                                  json=payload, timeout=30.0)
+            r.raise_for_status()
+            return r.json()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code < 500:
+                raise HTTPException(e.response.status_code, e.response.text)
+            last_err = e
+        except (httpx.RequestError, httpx.TimeoutException) as e:
+            last_err = e
+    raise HTTPException(502, f"all_fallbacks_exhausted: {last_err}")
