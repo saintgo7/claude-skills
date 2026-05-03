@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (현재 main 브랜치에 머지되었으나 아직 태깅되지 않은 변경사항이 여기에 누적됩니다.)
 
+## [0.8.6] — 2026-05-03
+
+### Added
+- `multi-agent-git-collaboration-pattern` skill — 멀티 에이전트 동시 git race 안전 회복 패턴. case 21(push race, atomic commit hook + rebase) + case 22(Edit "modified since read" 자동 회복) 학습 종합. force push 0 / gem-llm 56h 76 라운드 검증.
+
+### Notes
+- REGISTRY: 57 → **58 entries**
+- gem-llm 책 case 22(Edit 단계 race 자동 회복)의 일반화.
+- 모든 skill-author agent prompt 에 들어갈 race 대비 표준 단락(§5) 정의 — 76 라운드 0 force push.
+
 ## [0.8.5] — 2026-05-03
 
 ### Added
