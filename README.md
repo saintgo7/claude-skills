@@ -28,6 +28,7 @@ Curated collection of Claude Code skills — bilingual research/code projects, L
 | [`multi-agent-orchestrator`](multi-agent-orchestrator/) | skill | 대량 작업 8+ 에이전트 병렬 디스패치 패턴 |
 | [`multi-agent-autonomous-loop-pattern`](multi-agent-autonomous-loop-pattern/) | skill | 멀티 에이전트 자율 루프 (55h 검증 패턴) |
 | [`bilingual-book-authoring`](bilingual-book-authoring/) | skill | 한/영 동시 책 저작 워크플로 (~1000p 검증) |
+| [`book-builder`](book-builder/) | skill | 프로젝트 설계/기술 문서 → 단행본 (Markdown + DOCX + PDF × 한/영) pandoc 파이프라인 |
 | [`korean-tech-blog-authoring`](korean-tech-blog-authoring/) | skill | 한국어 기술 블로그 저작 |
 | [`mermaid-diagram-authoring`](mermaid-diagram-authoring/) | skill | Mermaid 다이어그램 카탈로그 + SVG 빌드 |
 | [`claude-code-skill-authoring`](claude-code-skill-authoring/) | skill | skill 자체 작성 메타 |

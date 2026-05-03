@@ -83,6 +83,7 @@ REGISTRY=(
   "developer-onboarding-doc-pattern|skill|신규 개발자 0→실행 onboarding (README + QUICKSTART + INDEX 4-tier 구조 + 5분 검증) — gem-llm 검증"
   "coverage-instrumentation-pattern|skill|Python 3.12+ coverage 측정 (ctrace vs sysmon, COVERAGE_CORE=sysmon) — gem-llm case 23 검증 (47% → 100%)"
   "subagent-prompt-engineering-pattern|skill|Claude Code Agent tool 서브에이전트 prompt 작성 (race 대비 + atomic commit + 보고 단어 제한, 60h 530 디스패치 검증)"
+  "book-builder|skill|프로젝트 설계/기술 문서 → 단행본 (Markdown + DOCX + PDF × 한/영) — pandoc + xelatex 파이프라인, 17장 구성, 한/영 이중 언어 템플릿, 품질 게이트"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────
