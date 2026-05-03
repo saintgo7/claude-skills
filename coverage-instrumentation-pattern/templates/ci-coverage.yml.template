@@ -1,0 +1,51 @@
+name: Test Coverage
+
+# Python 3.12 + COVERAGE_CORE=sysmon 으로 정확 측정
+# (default ctrace 는 async/asyncio 라인을 일부 누락 — case 23 참고)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python 3.12 (PEP-669 sys.monitoring)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest pytest-cov pytest-asyncio "coverage>=7.4"
+
+      - name: Verify coverage backend
+        run: |
+          python -c "import coverage; print('coverage', coverage.__version__)"
+          python --version
+
+      - name: pytest --cov (sysmon backend)
+        env:
+          COVERAGE_CORE: sysmon   # ← 핵심: ctrace 의 async 라인 누락 회피
+        run: |
+          pytest --cov=src/ \
+                 --cov-report=term-missing \
+                 --cov-report=xml \
+                 --cov-fail-under=85
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          retention-days: 14

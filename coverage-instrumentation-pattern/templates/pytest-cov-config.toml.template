@@ -1,0 +1,28 @@
+# pyproject.toml — pytest + coverage with sysmon backend
+# Python 3.12+ 필수 (PEP-669 sys.monitoring)
+# coverage>=7.4 필수 (sysmon backend 안정 버전)
+
+[tool.coverage.run]
+core = "sysmon"
+source = ["src/"]
+branch = false
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 85
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "@abstractmethod",
+    "if TYPE_CHECKING:",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.pytest.ini_options]
+addopts = "--cov=src --cov-report=term-missing --cov-report=html"
+testpaths = ["tests"]
+asyncio_mode = "auto"
