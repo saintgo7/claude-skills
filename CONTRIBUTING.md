@@ -105,6 +105,33 @@ REGISTRY=(
 
 `./install.sh --list`로 노출되며, sparse checkout으로 가벼운 설치 가능.
 
+## 신규 skill 추가 시 atomic commit 정책
+
+REGISTRY entry와 디렉토리는 **반드시 한 commit**에 같이 들어가야 합니다.
+중간 commit 시점에 mismatch가 나면 CI (validate.yml)의 REGISTRY ↔ 디렉토리
+cross-check가 실패합니다.
+
+```bash
+# Wrong (CI 실패 — 중간 commit 시점에 mismatch)
+git add new-skill/ && git commit -m "..."
+git add install.sh && git commit -m "..."   # 별도 commit
+
+# Right (atomic)
+git add new-skill/ install.sh
+git commit -m "feat: add new-skill"
+```
+
+pre-commit hook 활성화 (선택 — 로컬에서 atomic 위반 사전 차단):
+
+```bash
+bash .githooks/install.sh
+# → git config core.hooksPath .githooks
+# 이후 commit 시 .githooks/pre-commit이 자동 검증
+# 비활성화: git config --unset core.hooksPath
+```
+
+CI는 PR단계에서도 동일 검증을 수행 (`Atomic commit check` step).
+
 ## 좋은 skill의 조건
 
 ✅ **명확한 트리거** — description에 "이런 발화일 때 사용" 5~10개 phrase

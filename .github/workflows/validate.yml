@@ -11,6 +11,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Atomic commit check
+        if: github.event_name == 'pull_request'
+        run: |
+          # PR base..HEAD diff에서 새 SKILL.md vs install.sh REGISTRY 추가 일치 확인
+          # (case CI transient failure 회피: 중간 commit 시점 mismatch 방지)
+          set -e
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+
+          NEW=$(git diff --name-only --diff-filter=A "$BASE_SHA"...HEAD \
+            | grep -E "^[^/]+/SKILL\.md$" \
+            | xargs -I {} dirname {} || true)
+
+          errors=0
+          for skill in $NEW; do
+            if ! git diff "$BASE_SHA"...HEAD install.sh 2>/dev/null | grep -qE "^\+\s*\"$skill\|"; then
+              echo "❌ '$skill/' 디렉토리 추가됐지만 install.sh REGISTRY에 누락"
+              errors=$((errors+1))
+            fi
+          done
+
+          if [ "$errors" -eq 0 ]; then
+            echo "✅ Atomic commit check passed"
+          else
+            exit 1
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v5

@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# claude-skills pre-commit: atomic REGISTRY <-> 디렉토리 검증
+# 새로 추가되는 SKILL.md 디렉토리와 install.sh REGISTRY entry가
+# 같은 commit에 함께 들어가는지 확인 (case CI transient failure 회피).
+
+set -e
+
+REGISTRY_FILE="install.sh"
+
+# 새로 추가되는 SKILL.md 디렉토리
+NEW_SKILLS=$(git diff --cached --name-only --diff-filter=A 2>/dev/null \
+  | grep -E "^[^/]+/SKILL\.md$" \
+  | xargs -I {} dirname {} || true)
+
+for skill in $NEW_SKILLS; do
+  if ! git diff --cached "$REGISTRY_FILE" 2>/dev/null | grep -qE "^\+\s*\"$skill\|"; then
+    echo "ERROR: '$skill/' 디렉토리는 추가됐지만 install.sh REGISTRY에 누락"
+    echo "   같은 commit에 install.sh의 REGISTRY=( ... ) 배열에 추가하세요:"
+    echo "   \"$skill|skill|<설명>\""
+    exit 1
+  fi
+done
+
+# 새로 추가되는 REGISTRY entry 검증 (디렉토리 동시 존재)
+NEW_REGISTRY=$(git diff --cached "$REGISTRY_FILE" 2>/dev/null \
+  | grep -oE '^\+\s*"[^"]+\|skill\|' \
+  | sed -E 's/^\+\s*"([^|]+)\|.*/\1/' || true)
+
+for name in $NEW_REGISTRY; do
+  if [ ! -f "$name/SKILL.md" ]; then
+    if ! git diff --cached --name-only --diff-filter=A | grep -q "^$name/SKILL.md$"; then
+      echo "ERROR: REGISTRY에 '$name' 추가했지만 디렉토리/SKILL.md 부재"
+      exit 1
+    fi
+  fi
+done
+
+echo "atomic commit OK"
