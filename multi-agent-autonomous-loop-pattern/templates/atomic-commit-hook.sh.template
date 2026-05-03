@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# claude-skills atomic commit hook
+# multi-agent-autonomous-loop-pattern 동봉
+#
+# 새로 추가되는 SKILL.md 디렉토리와 install.sh REGISTRY entry가
+# 같은 commit에 함께 들어가는지 검증 (race condition 차단).
+#
+# 설치:
+#   cp this-template .githooks/pre-commit
+#   chmod +x .githooks/pre-commit
+#   git config core.hooksPath .githooks
+
+set -e
+
+REGISTRY_FILE="install.sh"
+
+# (1) 새 SKILL.md 추가 시 install.sh REGISTRY entry 동시 staging 강제
+NEW_SKILLS=$(git diff --cached --name-only --diff-filter=A 2>/dev/null \
+  | grep -E "^[^/]+/SKILL\.md$" \
+  | xargs -I {} dirname {} || true)
+
+errors=0
+for skill in $NEW_SKILLS; do
+  if ! git diff --cached "$REGISTRY_FILE" 2>/dev/null | grep -qE "^\+\s*\"$skill\|"; then
+    echo "ERROR: '$skill/' 추가됐지만 install.sh REGISTRY에 누락"
+    echo "  같은 commit에 다음 라인 추가:"
+    echo "    \"$skill|skill|<설명>\""
+    errors=$((errors+1))
+  fi
+done
+
+# (2) 새 REGISTRY entry 추가 시 디렉토리/SKILL.md 동시 존재 강제
+NEW_REGISTRY=$(git diff --cached "$REGISTRY_FILE" 2>/dev/null \
+  | grep -oE '^\+\s*"[^"]+\|skill\|' \
+  | sed -E 's/^\+\s*"([^|]+)\|.*/\1/' || true)
+
+for name in $NEW_REGISTRY; do
+  if [ ! -f "$name/SKILL.md" ]; then
+    if ! git diff --cached --name-only --diff-filter=A | grep -q "^$name/SKILL.md$"; then
+      echo "ERROR: REGISTRY에 '$name' 추가했지만 디렉토리/SKILL.md 부재"
+      errors=$((errors+1))
+    fi
+  fi
+done
+
+[ "$errors" -eq 0 ] || exit 1
+echo "atomic commit OK"

@@ -75,6 +75,7 @@ REGISTRY=(
   "shell-cli-dispatch-pattern|skill|Bash CLI sub-command dispatcher 정형 (shift+\"\$@\" + shellcheck + 회귀 테스트) — gem-llm case 19"
   "api-contract-testing-pattern|skill|FastAPI/REST API contract 테스트 (pydantic + openapi snapshot + happy/error path) — case 20 일반화"
   "html-static-dashboard-pattern|skill|정적 HTML 헬스 대시보드 (Grafana 부재 대안, bash + curl + grid + XSS 회피) — gem-llm 라운드 70 검증"
+  "multi-agent-autonomous-loop-pattern|skill|Claude Code 멀티 에이전트 자율 루프 (5 agent + ScheduleWakeup + atomic hook) — gem-llm 55h 무사고 검증"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────
