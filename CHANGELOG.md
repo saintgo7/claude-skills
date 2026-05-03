@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (현재 main 브랜치에 머지되었으나 아직 태깅되지 않은 변경사항이 여기에 누적됩니다.)
 
+## [0.8.4] — 2026-05-03
+
+### Added
+- `api-contract-testing-pattern` skill — FastAPI/REST contract 테스트 (pydantic + openapi snapshot)
+- `html-static-dashboard-pattern` skill — 정적 HTML 헬스 대시보드 (Grafana 부재 대안)
+- `multi-agent-autonomous-loop-pattern` skill — 5 agent + ScheduleWakeup + atomic hook (55h 검증)
+
+### Notes
+- REGISTRY: 51 → **54 entries**
+- gem-llm 55시간 자율 진행 패턴 추출 (71 라운드, ~350 디스패치, force push 0)
+- atomic commit hook race condition 자동 해결 검증 완료 (case 21)
+- README 카탈로그 26 → 53 항목 확장
+
 ## [0.8.3] — 2026-05-03
 
 ### Added
