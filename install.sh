@@ -65,6 +65,7 @@ REGISTRY=(
   "mermaid-diagram-authoring|skill|Mermaid 다이어그램 작성 + Pandoc 통합 5단계 (CATALOG → extract → SVG → Lua filter → 본문 참조) — 40 다이어그램 검증"
   "api-key-lifecycle-pattern|skill|API key 발급/회수/검증 라이프사이클 (gem_live_<32hex>, prefix 8자 lookup, sha256+salt)"
   "k8s-cron-alternatives|skill|K8s pod / cron 미설치 환경 정기 작업 5 패턴 (watchdog + CronJob + external + s6-cron + supervisord)"
+  "cicd-github-actions-pattern|skill|GitHub Actions CI/CD 검증된 패턴 (schema validation + pip-audit + atomic commit) — claude-skills 41 run green"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────

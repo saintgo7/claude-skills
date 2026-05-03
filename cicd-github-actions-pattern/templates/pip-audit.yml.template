@@ -1,0 +1,42 @@
+name: pip-audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'requirements*.txt'
+      - 'pyproject.toml'
+      - '.github/workflows/pip-audit.yml'
+  schedule:
+    - cron: '0 9 * * 1'      # Mon 09:00 UTC (= KST 18:00)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Replace with your repo's requirements file(s).
+    # For monorepo, use a matrix over workspaces.
+    env:
+      REQ_FILE: requirements.txt
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - run: pip install pip-audit
+
+      - name: Audit dependencies (informational, does not block)
+        continue-on-error: true   # CVE found ≠ block PR; surface in UI only
+        run: |
+          pip-audit -r "${REQ_FILE}" --strict

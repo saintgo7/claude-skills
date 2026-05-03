@@ -1,0 +1,92 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install deps
+        run: pip install pyyaml
+
+      - name: Validate YAML frontmatter (name == directory, length limits)
+        run: |
+          python3 << 'EOF'
+          import yaml, sys
+          from pathlib import Path
+
+          errors, count = [], 0
+          # Adjust glob to your repo's structure (e.g. "*/SKILL.md", "docs/*.md")
+          for md in sorted(Path('.').glob('*/SKILL.md')):
+              count += 1
+              text = md.read_text()
+              if not text.startswith('---'):
+                  errors.append(f"{md}: missing frontmatter"); continue
+              end = text.find('---', 3)
+              if end < 0:
+                  errors.append(f"{md}: unclosed frontmatter"); continue
+              try:
+                  fm = yaml.safe_load(text[3:end])
+              except yaml.YAMLError as e:
+                  errors.append(f"{md}: parse error: {str(e)[:100]}"); continue
+              if not isinstance(fm, dict):
+                  errors.append(f"{md}: frontmatter must be mapping"); continue
+              name, desc = fm.get('name', ''), fm.get('description', '')
+              if not name: errors.append(f"{md}: missing 'name'")
+              if not desc: errors.append(f"{md}: missing 'description'")
+              if len(desc) > 1024: errors.append(f"{md}: desc > 1024")
+              if len(name) > 64: errors.append(f"{md}: name > 64")
+              if name and name != md.parent.name:
+                  errors.append(f"{md}: name '{name}' != dir '{md.parent.name}'")
+
+          if errors:
+              print(f"FAIL {len(errors)} errors in {count}:")
+              for e in errors: print(f"  {e}")
+              sys.exit(1)
+          print(f"OK {count} validated")
+          EOF
+
+      - name: Validate REGISTRY ↔ directory cross-reference
+        run: |
+          bash << 'EOF'
+          set -e
+          mapfile -t entries < <(grep -E '^\s*"[^"]+\|' install.sh | sed 's/^\s*"//; s/".*$//')
+          errors=0
+          for entry in "${entries[@]}"; do
+            name=$(echo "$entry" | cut -d'|' -f1)
+            type=$(echo "$entry" | cut -d'|' -f2)
+            if [ "$type" = "skill" ] && [ ! -f "$name/SKILL.md" ]; then
+              echo "FAIL: skill '$name' missing $name/SKILL.md"
+              errors=$((errors+1))
+            fi
+          done
+          [ "$errors" -eq 0 ] && echo "OK ${#entries[@]} REGISTRY entries valid" || exit 1
+          EOF
+
+      - name: Bash syntax check (no execution)
+        run: |
+          for sh in $(find . -name "*.sh" -not -path "./.git/*"); do
+            bash -n "$sh" || { echo "FAIL: $sh"; exit 1; }
+          done
+          echo "OK shell scripts valid"
