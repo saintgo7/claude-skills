@@ -1,0 +1,58 @@
+# test-author-prompt template
+
+기존 코드 모듈에 pytest 테스트를 추가하는 서브에이전트 prompt 표준 템플릿.
+자리표시자 `<MODULE>` / `<TARGET_COV>` / `<REPO>` 등을 채워 사용.
+
+---
+
+```markdown
+**컨텍스트:** <REPO> 라운드 N. `<MODULE>` 커버리지 <CURRENT>% → <TARGET_COV>%+ 보강.
+Python 3.12+ async — sysmon 환경 필수 (case 23).
+
+**중요 (race 대비)**: 다른 에이전트와 병렬로 tests/ 수정 가능.
+- Edit "modified since read" 시 → 최신 Read 재실행 + Edit 재시도
+- push 거부 시 → git pull --rebase + retry
+- force push 절대 금지
+- 자기 테스트 파일 anchor 는 다른 에이전트와 별도 (예: tests/<MODULE>_extra.py 신규 분리)
+
+**출력 파일 (1-2):**
+1. `<REPO>/tests/test_<MODULE>_extra.py` (~150 lines)
+2. (선택) `<REPO>/tests/conftest.py` 보강 (~+20 lines)
+
+**작업 1: 테스트 추가**
+[목적] `<MODULE>` 미커버 라인 / 분기 보강
+[명령] pytest --cov=<MODULE> --cov-report=term-missing 으로 missing 라인 식별 → 테스트 추가
+[기대] pytest -q tests/test_<MODULE>_extra.py → 모두 PASS
+[복구] async 테스트 실패 시 → COVERAGE_CORE=sysmon export 확인 + pytest-asyncio mode=auto 확인
+
+**작업 2: 커버리지 게이트 검증**
+[목적] --cov-fail-under=<TARGET_COV> 통과
+[명령]
+  COVERAGE_CORE=sysmon pytest --cov=<MODULE> --cov-fail-under=<TARGET_COV>
+[기대] exit 0 + Total ≥ <TARGET_COV>%
+[복구] 미달 시 → 미커버 라인 추가 테스트 1-2 케이스 작성
+
+**작업 3: atomic commit + push**
+```bash
+cd <REPO>
+git pull --rebase origin main
+git add tests/test_<MODULE>_extra.py  # 다른 파일 누설 방지
+git commit -m "test(<MODULE>): <CURRENT>% → <TARGET_COV>%+ coverage"
+git push origin main || (git pull --rebase origin main && git push origin main)
+```
+
+**제약:**
+- `rm -rf` 금지
+- 운영 코드 (src) 무수정 — 테스트만
+- race 대비 (위 단락)
+- atomic commit (자기 테스트 파일만 add)
+- COVERAGE_CORE=sysmon (Python 3.12 async)
+
+**완료 후 보고 (200단어 이내):**
+- 새 테스트 케이스 수 + 라인 수
+- 커버리지 변화: <CURRENT>% → 측정값
+- pytest pass/fail count
+- commit hash + push 성공
+- race 발생 여부
+- 제약 준수 확인 (운영 코드 무수정, 테스트만)
+```

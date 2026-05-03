@@ -1,0 +1,68 @@
+# skill-author-prompt template
+
+새 claude-skills skill 을 추가하는 서브에이전트 prompt 표준 템플릿.
+자리표시자 `<NAME>` / `<DESC>` / `<CATEGORY>` / `<CURRENT_COUNT>` 등을 채워 사용.
+
+---
+
+```markdown
+**컨텍스트:** claude-skills 라운드 N. <NAME> skill 신규 추가 — <한 줄 요약>.
+검증 사례: <검증 메트릭, 예: gem-llm 60h / 530 디스패치>.
+
+**중요 (race 대비)**: 다른 에이전트와 병렬로 install.sh 수정 가능.
+- Edit "modified since read" 시 → grep 으로 변경 확인 + Read 재실행 + Edit 재시도
+- push 거부 시 → git pull --rebase + retry (rebase 후 diff 비어있으면 description 미세 갱신으로 우회)
+- force push 절대 금지
+- 자기 anchor (`<CATEGORY>` 다음) 는 다른 에이전트 anchor 와 다르게 잡기
+
+**출력 파일 (4):**
+1. `/home/jovyan/claude-skills/<NAME>/SKILL.md` (~250 lines)
+2. `/home/jovyan/claude-skills/<NAME>/templates/<x>.md.template` (~80 lines)
+3. `/home/jovyan/claude-skills/<NAME>/CHECKLIST.md` (~40 lines)
+4. `/home/jovyan/claude-skills/<NAME>/README.md` (~25 lines)
++ `install.sh` REGISTRY 1 줄 (<CURRENT_COUNT> → +1 entries)
+
+**작업 1: SKILL.md 본문 작성**
+[목적] frontmatter (name / description ≤1024자) + 12 섹션 본문
+[명령] Write — 사용 시점 / 구조 / 표준 단락 / 실패 패턴 / 검증 / 관련 skill 포함
+[기대] wc -l SKILL.md → ~250
+[복구] description >1024자 → 단축 후 재작성
+
+**작업 2: templates/ + CHECKLIST.md + README.md**
+[목적] 보조 산출물 — 복붙용 템플릿 + 점검 + 노출
+[명령] Write 3 회
+[기대] 디렉토리에 4 파일 (SKILL/template/CHECKLIST/README)
+
+**작업 3: install.sh REGISTRY 1줄 추가**
+[목적] install.sh --list 노출 + ./install.sh <NAME> 으로 설치 가능
+[명령]
+  cd /home/jovyan/claude-skills && git pull --rebase origin main
+  Edit install.sh → REGISTRY 배열에 1줄 추가
+  형식: "<NAME>|skill|<DESC ≤1024자, 검증 메트릭 포함>"
+[기대] awk '/^REGISTRY=\(/,/^\)/' install.sh | grep -c '^  "' → +1
+[복구] "modified since read" 시 → Read 재실행 + Edit 재시도
+
+**작업 4: atomic commit + push**
+```bash
+cd /home/jovyan/claude-skills
+git add <NAME>/ install.sh
+git commit -m "feat(<NAME>): <한 줄 요약> (+1 entries)"
+git push origin main || (git pull --rebase origin main && git push origin main)
+```
+
+**제약:**
+- `rm -rf` 금지 (대신 `_trash/` 격리)
+- 운영 무수정 (skill 추가만)
+- race 대비 (위 단락)
+- atomic commit (자기 변경만 add — `git add .` 금지)
+- description ≤1024자
+- 메모리 파일 (`~/.claude/...`) commit 금지
+
+**완료 후 보고 (250단어 이내):**
+- 4 파일 라인 수
+- skill 핵심 가치 1-2 줄
+- REGISTRY entry: <CURRENT_COUNT> → +1
+- commit hash + push 성공
+- race 발생 여부 (Edit / push 어디서, 어떻게 회복)
+- 제약 준수 확인 (rm -rf 0, force push 0, 자기 변경만)
+```
