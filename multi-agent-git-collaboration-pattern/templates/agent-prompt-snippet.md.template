@@ -1,0 +1,46 @@
+# Agent prompt snippet — race 대비 표준 단락
+
+매 skill-author / 멀티 에이전트 prompt 에 붙여 넣는다.
+하단의 두 변형 중 상황에 맞게 선택.
+
+## 변형 A — 기본 (claude-skills repo 신규 skill 추가)
+
+```
+**중요 (race 대비)**: install.sh 다른 에이전트와 병렬 수정.
+- Edit "modified since read" 시 → grep으로 변경 확인 + Read 재실행 + Edit 재시도
+- push 거부 시 → git pull --rebase + retry (rebase 후 diff 비어있으면 description 미세 갱신으로 우회)
+- force push 절대 금지
+- 자기 anchor (예: production-postmortem 다음) 는 다른 에이전트 anchor 와 다르게 잡기
+```
+
+## 변형 B — 책 / OUTLINE 동시 수정
+
+```
+**중요 (race 대비)**: OUTLINE.md / CHANGELOG.md 다른 에이전트와 병렬 수정.
+- Edit "modified since read" 시 → grep으로 추가된 chapter/case 확인 + Read 재실행 + Edit 재시도
+- push 거부 시 → git pull --rebase + retry
+- force push 절대 금지 (case 21 + 22 일반화)
+- 자기 chapter/case 위치는 다른 에이전트와 충돌 없는 anchor (예: 18장 끝, case 22 다음)
+```
+
+## 변형 C — 일반 협업 repo (skill 외)
+
+```
+**중요 (race 대비)**: 공유 파일을 다른 에이전트/협업자와 병렬 수정.
+- Edit/Write "stale" 거부 시 → 최신 파일 Read 재실행 + diff 비교 + Edit 재시도
+- git push 거부 시 → git pull --rebase + 충돌 해결 + retry
+- force push 절대 금지 — 다른 작업 손실 위험
+- 가능하면 자기 변경 위치를 다른 협업자와 별도 섹션/anchor 로 분리
+```
+
+## 사용 패턴
+
+1. 멀티 에이전트 디스패치 시 각 에이전트 prompt 끝에 변형 중 하나 첨부
+2. atomic commit hook 도 함께 활성화 (`git config core.hooksPath .githooks`)
+3. 라운드 후 보고에 race 발생 + 회복 여부 명시 강제
+
+## 검증 메트릭
+
+- gem-llm 56h / 76 라운드 / ~390 디스패치 무사고
+- force push 0 / 데이터 손실 0
+- Edit race 1+ / push race 1+ 자동 회복 (case 21 + 22)
