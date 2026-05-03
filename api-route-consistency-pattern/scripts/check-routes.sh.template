@@ -1,0 +1,82 @@
+#!/bin/bash
+# check-routes.sh — Gateway/CLI/매뉴얼 3-way 라우트 일관성 검증.
+#
+# Usage:
+#   bash check-routes.sh
+#
+# Exit code:
+#   0 — 3-way 일치
+#   1 — mismatch (stdout에 diff 표시)
+#
+# 적용 전 수정:
+#   - GATEWAY_MODULE: FastAPI app 경로 (예: gateway.main)
+#   - CLI_FILE: admin-cli 위치
+#   - MANUAL_GLOB: 매뉴얼 마크다운 위치
+#
+# Requires: python3 (FastAPI installed), grep, diff, bash 4+
+
+set -euo pipefail
+
+# ── config (수정 필요) ───────────────────────────────────────────────────────
+GATEWAY_MODULE="${GATEWAY_MODULE:-gateway.main}"
+CLI_FILE="${CLI_FILE:-scripts/admin-cli.sh}"
+MANUAL_GLOB="${MANUAL_GLOB:-docs/manual-*/chapters/*.md}"
+
+TMPDIR=$(mktemp -d)
+trap 'rm -rf "$TMPDIR"' EXIT
+
+# ── [1] FastAPI 라우터 추출 ─────────────────────────────────────────────────
+python3 -c "
+import importlib
+mod = importlib.import_module('${GATEWAY_MODULE}')
+app = mod.app
+seen = set()
+for r in app.routes:
+    if not hasattr(r, 'path') or not hasattr(r, 'methods'):
+        continue
+    for m in (r.methods or []):
+        if m in ('HEAD', 'OPTIONS'):
+            continue
+        seen.add(f'{m} {r.path}')
+for line in sorted(seen):
+    print(line)
+" > "$TMPDIR/fastapi.txt"
+
+# ── [2] CLI 호출 추출 ──────────────────────────────────────────────────────
+grep -hE "(GET|POST|PUT|DELETE|PATCH)\s+/[^\"' ]*" "$CLI_FILE" 2>/dev/null \
+  | sed -E 's/^.*(GET|POST|PUT|DELETE|PATCH)[[:space:]]+(\/[^"'"'"' ]*).*$/\1 \2/' \
+  | sort -u \
+  > "$TMPDIR/cli.txt"
+
+# ── [3] 매뉴얼 인용 추출 ────────────────────────────────────────────────────
+# shellcheck disable=SC2086
+grep -hoE "(GET|POST|PUT|DELETE|PATCH)[[:space:]]+/[a-zA-Z0-9_/{}-]+" $MANUAL_GLOB 2>/dev/null \
+  | sed -E 's/[[:space:]]+/ /g' \
+  | sort -u \
+  > "$TMPDIR/manual.txt"
+
+# ── [4] 비교 ───────────────────────────────────────────────────────────────
+fail=0
+
+echo "── FastAPI ↔ CLI ──────────────────────────────"
+if diff "$TMPDIR/fastapi.txt" "$TMPDIR/cli.txt"; then
+    echo "OK"
+else
+    fail=1
+fi
+
+echo "── FastAPI ↔ Manual ───────────────────────────"
+if diff "$TMPDIR/fastapi.txt" "$TMPDIR/manual.txt"; then
+    echo "OK"
+else
+    fail=1
+fi
+
+if [ "$fail" -ne 0 ]; then
+    echo ""
+    echo "FAIL: route mismatch (위 diff 확인 후 4-way 동기화 PR)"
+    exit 1
+fi
+
+echo ""
+echo "OK: 3-way consistent"

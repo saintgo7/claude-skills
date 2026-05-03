@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+"""check-cli-routes.py — FastAPI / CLI / 매뉴얼 3-way 라우트 set diff (Python).
+
+bash 버전 (check-routes.sh)과 동일한 일을 하지만, FastAPI app을 ast.parse로 정적
+추출하기 때문에 import 부작용을 피할 수 있다 (DB 연결, env 검증 등).
+
+Usage:
+    python3 check-cli-routes.py
+
+Config:
+    GATEWAY_FILE  — FastAPI 라우터가 있는 .py 파일
+    CLI_FILE      — admin-cli 스크립트 (bash/sh)
+    MANUAL_GLOB   — 매뉴얼 마크다운 glob
+
+Exit:
+    0 — 3-way 일치
+    1 — mismatch (stdout에 set diff 표시)
+"""
+from __future__ import annotations
+
+import ast
+import glob
+import os
+import re
+import sys
+
+GATEWAY_FILE = os.environ.get("GATEWAY_FILE", "gateway/routes.py")
+CLI_FILE = os.environ.get("CLI_FILE", "scripts/admin-cli.sh")
+MANUAL_GLOB = os.environ.get("MANUAL_GLOB", "docs/manual-*/chapters/*.md")
+
+ROUTE_RE = re.compile(r"\b(GET|POST|PUT|DELETE|PATCH)\b\s+(/[A-Za-z0-9_/{}-]*)")
+
+
+def from_fastapi(path: str) -> set[str]:
+    """ast.parse로 @app.get('/x') / @router.post('/y') 추출 (import 무부작용)."""
+    tree = ast.parse(open(path).read())
+    out: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            continue
+        for dec in node.decorator_list:
+            if not isinstance(dec, ast.Call) or not isinstance(dec.func, ast.Attribute):
+                continue
+            method = dec.func.attr.upper()
+            if method not in {"GET", "POST", "PUT", "DELETE", "PATCH"}:
+                continue
+            if dec.args and isinstance(dec.args[0], ast.Constant):
+                out.add(f"{method} {dec.args[0].value}")
+    return out
+
+
+def from_cli(path: str) -> set[str]:
+    return {f"{m} {p}" for m, p in ROUTE_RE.findall(open(path).read())}
+
+
+def from_manual(pattern: str) -> set[str]:
+    out: set[str] = set()
+    for f in glob.glob(pattern):
+        out.update(f"{m} {p}" for m, p in ROUTE_RE.findall(open(f).read()))
+    return out
+
+
+def main() -> int:
+    fa = from_fastapi(GATEWAY_FILE)
+    cli = from_cli(CLI_FILE)
+    manual = from_manual(MANUAL_GLOB)
+
+    fail = False
+    for label, other in (("CLI", cli), ("Manual", manual)):
+        only_fa = fa - other
+        only_other = other - fa
+        if only_fa or only_other:
+            fail = True
+            print(f"── FastAPI ↔ {label} ──")
+            for r in sorted(only_fa):
+                print(f"  - only in FastAPI: {r}")
+            for r in sorted(only_other):
+                print(f"  - only in {label}: {r}")
+        else:
+            print(f"OK: FastAPI ↔ {label}")
+
+    if fail:
+        print("\nFAIL: route mismatch (4-way 동기화 PR 필요)")
+        return 1
+    print("\nOK: 3-way consistent")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

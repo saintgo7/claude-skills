@@ -70,6 +70,7 @@ REGISTRY=(
   "multi-llm-routing-pattern|skill|FastAPI Gateway 모델 라우팅 5 패턴 (정적/weighted/fallback/사용자별/A/B) — GEM-LLM 검증"
   "concurrent-load-testing-pattern|skill|API/LLM 동시성 부하 테스트 (locust + asyncio) — 50/100/200 검증, p99 SLO, 키 분배"
   "bulk-user-onboarding-pattern|skill|CSV/JSON 사용자 일괄 등록 (idempotent 카운터 + 1회 캐싱) — gem-llm 76 users 검증"
+  "api-route-consistency-pattern|skill|Gateway 라우트 ↔ CLI ↔ 매뉴얼 ↔ 테스트 4-way 일관성 (curl --fail-with-body + smoke test) — gem-llm case 20"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────
