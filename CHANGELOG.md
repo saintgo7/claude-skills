@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (현재 main 브랜치에 머지되었으나 아직 태깅되지 않은 변경사항이 여기에 누적됩니다.)
 
+## [0.8.9] — 2026-05-03
+
+### Added
+- `subagent-prompt-engineering-pattern` skill — Claude Code Agent tool 서브에이전트 prompt 작성 패턴. ~530 디스패치 학습 (race 대비 + atomic commit + 보고 단어 제한 + 12 섹션).
+
+### Notes
+- REGISTRY: 60 → **61 entries**
+- gem-llm 60h 자율 진행 ~530 에이전트 디스패치 / force push 0 패턴 일반화
+
 ## [0.8.8] — 2026-05-03
 
 ### Added
