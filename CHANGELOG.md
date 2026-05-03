@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (현재 main 브랜치에 머지되었으나 아직 태깅되지 않은 변경사항이 여기에 누적됩니다.)
 
+## [0.8.7] — 2026-05-03
+
+### Added
+- `developer-onboarding-doc-pattern` skill — 신규 개발자 0→실행 onboarding 4-tier 구조 (README + QUICKSTART + docs + INDEX + 5분 검증). gem-llm INDEX.md (22 cases + 58 skills + 12 SPECs + 81 라운드 통계) 작성 사례에서 추출.
+
+### Improved
+- skill description 품질 audit (58 skill) + 약한 description 2개 보강 (트리거 phrase + 사용 시점 명시 강화 — Claude Code 자동 invocation 정확도 향상).
+
+### Notes
+- REGISTRY: 58 → **59 entries** (skill 58 + command 1 = searcam-book)
+- gem-llm 책 case 1-22 영문 polish 시리즈 완료 → 22 case 모두 한국어/영어 mirror 완전 일치, 자연스러운 영어 어순 통과.
+- 자율 진행 86 라운드 / ~58h / force push 0 유지.
+
 ## [0.8.6] — 2026-05-03
 
 ### Added

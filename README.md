@@ -2,9 +2,9 @@
 
 Curated collection of Claude Code skills — bilingual research/code projects, LLM serving infrastructure, exam operations, technical book authoring.
 
-> Battle-tested in [GEM-LLM](https://github.com/saintgo7/gem-llm) (Qwen Coder dual-model coding assistant on 8×B200, ~56h autonomous operation, 21 production cases) and operational research projects.
+> Battle-tested in [GEM-LLM](https://github.com/saintgo7/gem-llm) (Qwen Coder dual-model coding assistant on 8×B200, ~58h autonomous operation, 22 production cases, force push 0건) and operational research projects.
 
-**v0.8.5** — 57 entries, atomic commit hook + CI 검증, install.sh sparse checkout.
+**v0.8.7** — 59 entries, atomic commit hook + CI 검증, install.sh sparse checkout, description 품질 audit 통과.
 
 ## 카탈로그 분포
 
@@ -12,7 +12,7 @@ Curated collection of Claude Code skills — bilingual research/code projects, L
 |---|---|---|
 | 메타 (skill 작성/카탈로그 자체) | 3 | claude-code-skill-authoring 등 |
 | 운영 (supervisor / cutover / migration) | 5 | postgres-migration-from-sqlite, blue-green-deployment 등 |
-| 패턴 (재사용 가능 일반 패턴) | ~28 | fastapi-async-patterns, multi-agent-autonomous-loop, html-static-dashboard, pod-process-autostart, cloudflare-tunnel-ssh-access, playbook-authoring 등 |
+| 패턴 (재사용 가능 일반 패턴) | ~30 | fastapi-async-patterns, multi-agent-autonomous-loop, multi-agent-git-collaboration, html-static-dashboard, pod-process-autostart, cloudflare-tunnel-ssh-access, playbook-authoring, developer-onboarding-doc 등 |
 | 인프라 (vLLM / Cloudflare / k8s) | 5 | vllm-bootstrap, cloudflare-tunnel-setup, k8s-pod-autostart 등 |
 | 저작 (한/영 책 + 논문 + 블로그) | 3 | bilingual-book-authoring, korean-tech-blog-authoring 등 |
 | **gem-llm 직접 운영** | **11** | gem-llm-overview / -supervisor / -admin-cli / -load-test / -troubleshooting / -cli-client / -vllm-debug / -gateway-debug / -deploy-vllm / -test-inference / -build-docs |
@@ -35,6 +35,8 @@ Curated collection of Claude Code skills — bilingual research/code projects, L
 | [`cloudflare-tunnel-ssh-access-pattern`](cloudflare-tunnel-ssh-access-pattern/) | skill | SSH via Cloudflare Tunnel (ProxyCommand, no-public-IP) |
 | [`pod-process-autostart-pattern`](pod-process-autostart-pattern/) | skill | K8s pod / systemd-less idempotent autostart |
 | [`playbook-authoring-pattern`](playbook-authoring-pattern/) | skill | 4-tuple([목적][명령][기대출력][실패복구]) 절차서 작성 |
+| [`multi-agent-git-collaboration-pattern`](multi-agent-git-collaboration-pattern/) | skill | 멀티 에이전트 동시 git race 안전 회복 (Edit re-read + atomic commit + rebase) |
+| [`developer-onboarding-doc-pattern`](developer-onboarding-doc-pattern/) | skill | 신규 개발자 0→실행 onboarding 4-tier (README + QUICKSTART + INDEX + 5분 검증) |
 | [`vllm-bootstrap`](vllm-bootstrap/) | skill | vLLM 처음부터 부팅 가이드 (13 실패 패턴) |
 | [`vllm-tool-calling`](vllm-tool-calling/) | skill | vLLM tool-call-parser 운영 |
 | [`llm-serving-performance-tuning`](llm-serving-performance-tuning/) | skill | LLM 서빙 성능 튜닝 (TP/MoE/quantization) |
