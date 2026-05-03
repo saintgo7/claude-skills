@@ -2,9 +2,9 @@
 
 Curated collection of Claude Code skills — bilingual research/code projects, LLM serving infrastructure, exam operations, technical book authoring.
 
-> Battle-tested in [GEM-LLM](https://github.com/saintgo7/gem-llm) (Qwen Coder dual-model coding assistant on 8×B200, ~58h autonomous operation, 22 production cases, force push 0건) and operational research projects.
+> Battle-tested in [GEM-LLM](https://github.com/saintgo7/gem-llm) (Qwen Coder dual-model coding assistant on 8×B200, ~59.5h autonomous operation, 23 production cases, force push 0건) and operational research projects.
 
-**v0.8.7** — 59 entries, atomic commit hook + CI 검증, install.sh sparse checkout, description 품질 audit 통과.
+**v0.8.8** — 60 entries, atomic commit hook + CI 검증, install.sh sparse checkout, COVERAGE_CORE=sysmon CI 표준 패턴.
 
 ## 카탈로그 분포
 

@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (현재 main 브랜치에 머지되었으나 아직 태깅되지 않은 변경사항이 여기에 누적됩니다.)
 
+## [0.8.8] — 2026-05-03
+
+### Added
+- `coverage-instrumentation-pattern` skill — Python 3.12+ coverage 측정 (ctrace vs sysmon, PEP-669 sys.monitoring) 패턴. gem-llm case 23 검증 (gateway admin.py 47% → 100%, COVERAGE_CORE=sysmon 환경변수 + CI gate 적정값 상향).
+
+### Changed
+- `cicd-github-actions-pattern` — `COVERAGE_CORE=sysmon` 섹션 + 트러블슈팅 표 갱신 (Python 3.12 async/asyncio 진입점 라인 누락 → sysmon 회복).
+
+### Notes
+- REGISTRY: 59 → **60 entries** (skill 59 + command 1 = searcam-book)
+- gem-llm 라운드 #99-100 발견 일반화: ctrace coverage backend 가 async 라인을 미계측 → `COVERAGE_CORE=sysmon` 으로 회복.
+- CI workflow 표준 패턴: `env: COVERAGE_CORE: sysmon` + `--cov-fail-under` 임계 +10pt 상향(예: 75 → 85).
+- 자율 진행 101 라운드 / ~59.5h / force push 0 유지.
+
 ## [0.8.7] — 2026-05-03
 
 ### Added
