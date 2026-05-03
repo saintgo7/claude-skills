@@ -1,0 +1,123 @@
+"""
+Contract test template — FastAPI + httpx + pydantic.
+
+사용법:
+  1. .template 확장자 제거 → tests/contract/test_contract.py
+  2. APP_IMPORT 를 본인 프로젝트 모듈로 수정
+  3. EXPECTED_ROUTES 표 갱신
+  4. ResponseSchema 클래스를 실제 API 응답에 맞게 수정
+  5. fixture (alice_key 등) 는 pytest-fastapi-pattern 의 conftest 활용
+  6. pytest tests/contract/ -m contract
+"""
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Literal
+
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from pydantic import BaseModel, ConfigDict
+
+# ── 1. 본인 프로젝트의 FastAPI app import ────────────────────────────────
+# from myapp.main import app  # noqa
+# 아래 placeholder는 실제 import 로 교체할 것.
+app: FastAPI  # type: ignore[no-redef]
+
+
+# ── 2. 라우트 존재성 (case 20 회귀 방지) ──────────────────────────────────
+EXPECTED_ROUTES: list[tuple[str, str]] = [
+    ("GET", "/healthz"),
+    ("GET", "/v1/me"),
+    ("GET", "/v1/me/keys"),
+    ("GET", "/v1/me/quota"),
+    ("POST", "/v1/chat/completions"),
+    # admin
+    ("GET", "/admin/users"),
+    ("POST", "/admin/users"),
+    ("GET", "/admin/keys"),
+    ("DELETE", "/admin/keys/{key_id}"),
+]
+
+
+@pytest.mark.contract
+@pytest.mark.parametrize("method,path", EXPECTED_ROUTES)
+def test_route_exists(method: str, path: str) -> None:
+    routes = [
+        (r.methods, r.path) for r in app.routes if hasattr(r, "methods")  # type: ignore[attr-defined]
+    ]
+    found = any(method in (m or set()) and path == p for m, p in routes)
+    assert found, f"Route {method} {path} not registered (case 20 회귀)"
+
+
+# ── 3. 응답 schema (drift 감지 = extra forbid) ────────────────────────────
+class UserResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    username: str
+    email: str
+    plan: Literal["free", "pro", "enterprise"]
+    created_at: datetime
+
+
+class ApiKeyResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    key_id: str
+    prefix: str
+    created_at: datetime
+    revoked_at: datetime | None = None
+
+
+# ── 4. happy path + error path 표준 (endpoint별 4 시나리오) ───────────────
+@pytest.mark.contract
+class TestMeEndpointContract:
+    def test_happy_path(self, client: TestClient, alice_key: str) -> None:
+        r = client.get("/v1/me", headers={"Authorization": f"Bearer {alice_key}"})
+        assert r.status_code == 200
+        user = UserResponse.model_validate(r.json())
+        assert user.username == "alice"
+        assert "@" in user.email
+
+    def test_no_auth(self, client: TestClient) -> None:
+        r = client.get("/v1/me")
+        assert r.status_code == 401
+        assert "detail" in r.json()
+
+    def test_invalid_auth(self, client: TestClient) -> None:
+        r = client.get("/v1/me", headers={"Authorization": "Bearer invalid"})
+        assert r.status_code == 401
+
+    def test_revoked_key(self, client: TestClient, revoked_key: str) -> None:
+        r = client.get("/v1/me", headers={"Authorization": f"Bearer {revoked_key}"})
+        assert r.status_code == 401
+
+
+@pytest.mark.contract
+class TestMyKeysContract:
+    def test_list_returns_array(self, client: TestClient, alice_key: str) -> None:
+        r = client.get("/v1/me/keys", headers={"Authorization": f"Bearer {alice_key}"})
+        assert r.status_code == 200
+        body = r.json()
+        assert isinstance(body, list)
+        for item in body:
+            ApiKeyResponse.model_validate(item)
+
+    def test_no_auth(self, client: TestClient) -> None:
+        r = client.get("/v1/me/keys")
+        assert r.status_code == 401
+
+
+# ── 5. 응답 헤더 검증 ──────────────────────────────────────────────────────
+@pytest.mark.contract
+def test_security_headers(client: TestClient) -> None:
+    r = client.get("/healthz")
+    assert r.headers.get("X-Content-Type-Options") == "nosniff"
+
+
+@pytest.mark.contract
+def test_rate_limit_headers(client: TestClient, alice_key: str) -> None:
+    r = client.get("/v1/me", headers={"Authorization": f"Bearer {alice_key}"})
+    assert "X-RateLimit-Limit" in r.headers
+    assert "X-RateLimit-Remaining" in r.headers

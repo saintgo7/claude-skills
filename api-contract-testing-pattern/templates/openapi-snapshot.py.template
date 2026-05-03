@@ -1,0 +1,85 @@
+"""
+openapi.json snapshot test — drift 자동 감지 + reviewer 승인 패턴.
+
+사용법:
+  1. .template 확장자 제거 → tests/contract/test_openapi_snapshot.py
+  2. 최초 실행: snapshot 자동 생성 후 skip
+  3. 두 번째 실행부터 drift 검증
+  4. 의도된 변경 시: pytest --update-snapshot 모드로 갱신 후 commit
+
+snapshot 파일 (openapi.snapshot.json) 은 반드시 git commit. .gitignore 금지.
+"""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+
+SNAPSHOT_PATH = Path(__file__).parent / "openapi.snapshot.json"
+
+# 비결정적 / 무시할 path 패턴 (필요 시 추가)
+IGNORED_PATH_PREFIXES: tuple[str, ...] = (
+    "/internal/debug",  # 디버그 endpoint는 snapshot 대상 외
+)
+
+
+def _filter_paths(paths: dict) -> dict:
+    return {
+        k: v
+        for k, v in paths.items()
+        if not any(k.startswith(p) for p in IGNORED_PATH_PREFIXES)
+    }
+
+
+@pytest.mark.contract
+def test_openapi_no_unintended_drift(client: TestClient) -> None:
+    current = client.get("/openapi.json").json()
+    current_paths = _filter_paths(current["paths"])
+
+    if not SNAPSHOT_PATH.exists():
+        snapshot_payload = {**current, "paths": current_paths}
+        SNAPSHOT_PATH.write_text(json.dumps(snapshot_payload, indent=2, sort_keys=True))
+        pytest.skip(f"Snapshot created at {SNAPSHOT_PATH}, run again to verify")
+
+    snapshot = json.loads(SNAPSHOT_PATH.read_text())
+    snapshot_paths = snapshot["paths"]
+
+    cur_set = set(current_paths.keys())
+    snap_set = set(snapshot_paths.keys())
+
+    removed = snap_set - cur_set
+    added = cur_set - snap_set
+
+    if removed:
+        pytest.fail(
+            f"Routes removed (breaking change): {sorted(removed)}\n"
+            "의도된 제거라면 snapshot 갱신 + PR 리뷰 필요."
+        )
+
+    if added:
+        # 새 라우트는 fail 하지 않음 — 다만 reviewer 가 PR description 으로 명시하도록
+        print(f"[contract] New routes detected (review required): {sorted(added)}")
+
+
+@pytest.mark.contract
+def test_openapi_method_drift(client: TestClient) -> None:
+    """동일 path 의 HTTP method 변경도 잡는다."""
+    if not SNAPSHOT_PATH.exists():
+        pytest.skip("Snapshot not yet created")
+
+    current = client.get("/openapi.json").json()
+    current_paths = _filter_paths(current["paths"])
+    snapshot = json.loads(SNAPSHOT_PATH.read_text())
+
+    drifted: list[str] = []
+    for path, snap_def in snapshot["paths"].items():
+        if path not in current_paths:
+            continue  # 위 테스트에서 이미 처리
+        cur_methods = set(current_paths[path].keys())
+        snap_methods = set(snap_def.keys())
+        if cur_methods != snap_methods:
+            drifted.append(f"{path}: {snap_methods} → {cur_methods}")
+
+    assert not drifted, f"Method drift on existing paths:\n" + "\n".join(drifted)

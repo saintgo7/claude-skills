@@ -73,6 +73,7 @@ REGISTRY=(
   "api-route-consistency-pattern|skill|Gateway 라우트 ↔ CLI ↔ 매뉴얼 ↔ 테스트 4-way 일관성 (curl --fail-with-body + smoke test) — gem-llm case 20"
   "production-postmortem-pattern|skill|운영 사고 postmortem (7-section + blameless + action items + book case 변환) — gem-llm 20 cases 검증"
   "shell-cli-dispatch-pattern|skill|Bash CLI sub-command dispatcher 정형 (shift+\"\$@\" + shellcheck + 회귀 테스트) — gem-llm case 19"
+  "api-contract-testing-pattern|skill|FastAPI/REST API contract 테스트 (pydantic + openapi snapshot + happy/error path) — case 20 일반화"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────
