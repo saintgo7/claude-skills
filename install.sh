@@ -72,7 +72,7 @@ REGISTRY=(
   "bulk-user-onboarding-pattern|skill|CSV/JSON 사용자 일괄 등록 (idempotent 카운터 + 1회 캐싱) — gem-llm 76 users 검증"
   "api-route-consistency-pattern|skill|Gateway 라우트 ↔ CLI ↔ 매뉴얼 ↔ 테스트 4-way 일관성 (curl --fail-with-body + smoke test) — gem-llm case 20"
   "production-postmortem-pattern|skill|운영 사고 postmortem (7-section + blameless + action items + book case 변환) — gem-llm 20 cases 검증"
-  "shell-cli-dispatch-pattern|skill|Bash CLI sub-command dispatcher (shift+\"\$@\" 정형 + shellcheck + 회귀 테스트) — gem-llm case 19"
+  "shell-cli-dispatch-pattern|skill|Bash CLI sub-command dispatcher 정형 (shift+\"\$@\" + shellcheck + 회귀 테스트) — gem-llm case 19"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────

@@ -1,0 +1,80 @@
+#!/bin/bash
+# admin-cli style sub-command dispatcher template.
+# 복사해서 sub-command 추가/제거만 해서 쓰면 됨.
+# 핵심: dispatcher 에서 `cmd="$1"; shift` → 분기마다 `"$@"` forward.
+
+set -euo pipefail
+
+API_BASE="${API_BASE:-http://localhost:8080}"
+ADMIN_TOKEN="${ADMIN_TOKEN:-}"
+
+# ── usage ──────────────────────────────────────────────────────────────────
+
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") COMMAND [OPTIONS]
+
+Commands:
+  list-users [--plan PLAN] [--active]    사용자 목록 (옵션 필터)
+  add-user USERNAME EMAIL                사용자 추가
+  -h, --help                             이 메시지
+
+Env:
+  API_BASE       (default: http://localhost:8080)
+  ADMIN_TOKEN    (required for write ops)
+EOF
+}
+
+# ── http helper ────────────────────────────────────────────────────────────
+
+api() {
+  curl --fail-with-body -sS \
+       -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+       -H "Content-Type: application/json" \
+       "$@"
+}
+
+# ── sub-commands ───────────────────────────────────────────────────────────
+
+cmd_list_users() {
+  local plan=""
+  local active=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --plan)     plan="$2"; shift 2 ;;
+      --plan=*)   plan="${1#*=}"; shift ;;
+      --active)   active="true"; shift ;;
+      --)         shift; break ;;
+      -*)         echo "Unknown option: $1" >&2; return 1 ;;
+      *)          echo "Unexpected arg: $1" >&2; return 1 ;;
+    esac
+  done
+
+  local query=""
+  [ -n "$plan" ]   && query="${query}${query:+&}plan=${plan}"
+  [ -n "$active" ] && query="${query}${query:+&}active=${active}"
+  api GET "${API_BASE}/users${query:+?${query}}"
+}
+
+cmd_add_user() {
+  if [ "$#" -lt 2 ]; then
+    echo "Usage: add-user USERNAME EMAIL" >&2
+    return 1
+  fi
+  local username="$1"
+  local email="$2"
+  api POST "${API_BASE}/users" \
+      -d "{\"username\":\"${username}\",\"email\":\"${email}\"}"
+}
+
+# ── dispatcher ─────────────────────────────────────────────────────────────
+
+[ "$#" -eq 0 ] && { usage; exit 0; }
+
+cmd="$1"; shift                              # ← sub-command 만 소비
+case "$cmd" in
+  list-users) cmd_list_users "$@" ;;         # ✅ 나머지 인자 forward
+  add-user)   cmd_add_user   "$@" ;;
+  -h|--help)  usage ;;
+  *) echo "Unknown command: $cmd" >&2; usage; exit 1 ;;
+esac
