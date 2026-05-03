@@ -1,0 +1,43 @@
+<!--
+  한 단계 (4-tuple) 템플릿. 절차서의 §N.M.K 자리에 복사해서 채운다.
+  요소 5개 모두 채워야 자율 실행 가능.
+-->
+
+#### N.M.K <단계 제목 — 동사로 시작 ("키 생성", "Tunnel 등록")>
+
+**[목적]** <왜 이 단계가 필요한지 1-2 문장. 다음 단계 / 최종 목표와의 관계>.
+
+**[명령]**
+```bash
+# 변수는 <UPPER_SNAKE_CASE> 로 명시
+# 권한 prompt: $ (user) vs # (root)
+$ <COMMAND_HERE>
+```
+
+**[기대 출력]** <정상 시 보일 텍스트. 예: "OK", "Status: 200", "(없음 — silent)", 또는 sample 출력 블록>.
+
+```text
+<sample expected output here>
+```
+
+**[검증]**
+```bash
+# 단계의 효과를 외부에서 확인 (state diff 검증)
+$ <VERIFY_COMMAND>
+# 기대: <expected verify output>
+```
+
+**[실패 시]**
+- 증상 `<error message A>` → 원인: <root cause> → 해결: `<fix command>`
+- 증상 `<error message B>` → 원인: <root cause> → 해결: <doc 링크 §X.Y>
+- 그 외 → §6.1 트러블슈팅 표 참조
+
+<!--
+  체크리스트 (작성자용):
+  [ ] 목적 1-2 문장 (왜)
+  [ ] 명령 — placeholder 명시, prompt 표기
+  [ ] 기대 출력 — silent 인 경우도 명시
+  [ ] 검증 — 명령과 다른 각도에서 확인
+  [ ] 실패 시 — 최소 2 증상
+  [ ] idempotent — 두 번 돌려도 안전 (가드 추가)
+-->

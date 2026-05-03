@@ -1,0 +1,146 @@
+<!--
+  전체 절차서 (playbook / runbook) 골격.
+  복사 → 프로젝트 docs/ops/<name>.md 로 저장 → 채운다.
+  검증된 길이: 800-1500 lines (gem-llm ssh-external-access.md v2 = 1193 lines).
+-->
+
+# <PLAYBOOK_TITLE> — 절차서 v<VERSION>
+
+> **요약 (1-2 문장)**: <목적과 결과물 한 줄 요약>.
+> **소요 시간**: 약 <N> 분 (pre-flight 포함).
+> **권한**: <user / sudo / root> 필요.
+> **검증 환경**: <OS / 버전 / 노드 수>.
+
+## 1. 배경 / 목적
+
+<왜 이 절차서가 필요한지. 어떤 문제를 푸는지. 누구를 위한 문서인지>.
+
+## 2. 아키텍처 / 데이터 흐름
+
+```text
+<ASCII 다이어그램 또는 Mermaid 코드 블록>
+[<source>] → [<step1>] → [<step2>] → [<destination>]
+```
+
+핵심 개념:
+- **<용어 A>**: <정의>
+- **<용어 B>**: <정의>
+
+## 3. 사전 준비 (pre-flight)
+
+### 3.0 자가진단 — 시작 전 한 셸로 확인
+
+```bash
+# 도구
+which <tool1> <tool2> || echo "MISSING tools"
+# 권한
+sudo -n true 2>/dev/null && echo "sudo OK" || echo "sudo FAIL"
+# 디스크 / 메모리
+df -h / | tail -1
+free -g | head -2
+# 네트워크
+curl -sS --max-time 5 https://<endpoint> >/dev/null && echo "net OK" || echo "net FAIL"
+# 기존 상태
+[ -f <existing_config> ] && echo "WARN: 기존 설정 존재 — §X.Y 분기"
+```
+
+기대 출력:
+```text
+<sample expected output>
+```
+
+실패 시 §6.1 트러블슈팅.
+
+### 3.1 변수 정의
+
+| 이름 | 예시 | 설명 |
+|---|---|---|
+| `<NODE_NAME>` | `master` | 작업 대상 노드 |
+| `<USER>` | `jovyan` | SSH 사용자 |
+| `<DOMAIN>` | `paper.pamout.com` | 외부 도메인 |
+
+## 4. 단계별 실행
+
+### 4.1 <Phase 1 — 무엇을 하는지>
+
+#### 4.1.1 <단계 제목>
+
+**[목적]** <왜>.
+
+**[명령]**
+```bash
+$ <command>
+```
+
+**[기대 출력]**
+```text
+<output>
+```
+
+**[검증]**
+```bash
+$ <verify>
+```
+
+**[실패 시]**
+- 증상 A → 원인 → 해결
+- 증상 B → 원인 → 해결
+
+<!-- 더 많은 단계는 templates/playbook-section.md.template 복사 -->
+
+### 4.2 <Phase 2>
+
+(동일한 4-tuple 구조 반복)
+
+## 5. 종합 검증
+
+```bash
+# 한 셸 한 줄로 절차서 전체 결과 확인
+for n in <NODE_LIST>; do
+  ssh "$n" "<smoke_test>" && echo "OK: $n" || echo "FAIL: $n"
+done
+```
+
+기대 출력:
+```text
+OK: <node1>
+OK: <node2>
+```
+
+전부 OK 면 절차 완료. 하나라도 FAIL 이면 §6.1 으로.
+
+## 6. 트러블슈팅
+
+### 6.1 자주 보는 실패
+
+| # | 증상 | 가능 원인 | 해결 |
+|---|---|---|---|
+| 1 | `<error 1>` | <cause> | `<fix command>` |
+| 2 | `<error 2>` | <cause> | §X.Y 다시 실행 |
+| 3 | `<error 3>` | <cause> | <doc 링크> |
+
+### 6.2 롤백
+
+```bash
+# 절차를 되돌리는 명령 (가능한 한 한 셸로)
+$ <rollback>
+```
+
+## 7. FAQ
+
+**Q. <자주 묻는 질문>?**
+A. <답>.
+
+## 8. 참고
+
+- <관련 문서 / 외부 링크>
+- <관련 skill: cloudflare-tunnel-setup, vllm-bootstrap, ...>
+
+## 9. Claude Code 에게 시킬 때
+
+```text
+@docs/ops/<this-doc>.md 절차 §4.<N> 수행.
+변수: <NODE>=master, <USER>=jovyan, <DOMAIN>=paper.pamout.com.
+실패 시 멈춤 + 보고.
+끝나면 §5 종합 검증 결과 출력.
+```

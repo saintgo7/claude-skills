@@ -78,6 +78,7 @@ REGISTRY=(
   "html-static-dashboard-pattern|skill|정적 HTML 헬스 대시보드 (Grafana 부재 대안, bash + curl + grid + XSS 회피) — gem-llm 라운드 70 검증"
   "multi-agent-autonomous-loop-pattern|skill|Claude Code 멀티 에이전트 자율 루프 (5 agent + ScheduleWakeup + atomic hook) — gem-llm 55h 무사고 검증"
   "cloudflare-tunnel-ssh-access-pattern|skill|Cloudflare Tunnel + cloudflared access ssh ProxyCommand (K8s pod / no-public-IP) — gem-llm 3노드 검증"
+  "playbook-authoring-pattern|skill|Claude Code / 사람 실행 가능한 절차서 작성 (4-tuple [목적][명령][기대출력][실패복구] + pre-flight + idempotent + 트러블슈팅 표) — gem-llm SSH doc v2 검증"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────
