@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (현재 main 브랜치에 머지되었으나 아직 태깅되지 않은 변경사항이 여기에 누적됩니다.)
 
+## [0.8.2] — 2026-05-03
+
+### Added
+- `bulk-user-onboarding-pattern` skill — CSV/JSON 사용자 일괄 등록 (idempotent + 1회 캐싱)
+- `api-route-consistency-pattern` skill — Gateway ↔ CLI ↔ 매뉴얼 ↔ 테스트 4-way 일관성
+
+### Notes
+- REGISTRY: 47 → **49 entries**
+- gem-llm 5월 3일 라운드에서 추출 (case 20 사고 + 76 users bulk 등록 검증)
+- atomic commit hook 검증 통과
+
 ## [0.8.1] — 2026-05-03
 
 ### Added
