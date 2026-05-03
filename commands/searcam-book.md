@@ -1,5 +1,5 @@
 ---
-description: "SearCam 기술 서적 챕터 작성/업데이트 — 한국어·영어 병렬 작성"
+description: 'SearCam 개발기 기술 서적 챕터 작성/업데이트 (한국어·영어 병렬 저술). 사용 시점 — "searcam book", "searcam chapter", "ch01"~"ch24", "기술 서적 챕터", "병렬 저술", "parallel authoring", "KO EN 동시 작성", "docs/book chapter", "make en-md". 챕터 매핑표 + KO/EN 템플릿 + 빌드 명령 (make md/en-md/both) 포함.'
 model: sonnet
 ---
 

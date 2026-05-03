@@ -1,6 +1,6 @@
 ---
 name: exam-system
-description: Flask-based online exam system template with anti-cheat, per-student time gating, and exam-day operational tooling. TRIGGER when the user wants to build, deploy, or operate an online exam/quiz/test system; asks about exam timing/grace/shuffle logic; needs real-time monitoring of student submissions during a live exam; wants to extend an individual student's deadline; or asks about anti-cheat (tab switching, copy/paste block, fullscreen, F12 block). SKIP for general programming questions unrelated to exams.
+description: 'Flask 기반 온라인 시험 시스템 템플릿 + 시험일 운영 도구 (anti-cheat, per-student 시간 게이팅, 실시간 모니터링). 사용 시점 — "online exam", "quiz system", "exam timing", "grace period", "shuffle questions", "anti-cheat", "tab switching", "copy paste block", "fullscreen exam", "F12 block", "extend deadline", "live exam monitoring", "submission stats". 66명 대학 중간고사 운영 검증 (92% 제출률). SKIP: 시험과 무관한 일반 프로그래밍.'
 ---
 
 # Online Exam System
