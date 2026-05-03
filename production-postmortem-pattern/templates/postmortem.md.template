@@ -1,0 +1,74 @@
+# Postmortem: <Title>
+
+**Date**: YYYY-MM-DD
+**Authors**: @alice, @bob
+**Status**: draft / final
+**Severity**: P0 / P1 / P2
+
+## TL;DR (3 lines)
+
+- 무엇이 깨졌는가 (사용자 관점)
+- 얼마나 영향 (X 사용자, Y분)
+- 근본 원인 한 줄 요약
+
+## Timeline (UTC)
+
+| Time | Event |
+|---|---|
+| HH:MM | 배포 / 변경 도입 |
+| HH:MM | 첫 알람 / 사용자 신고 |
+| HH:MM | 감지 (담당자 인지) |
+| HH:MM | 진단 시작 |
+| HH:MM | 1차 가설 — 기각 사유 |
+| HH:MM | 근본 원인 식별 |
+| HH:MM | 복구 조치 commit |
+| HH:MM | 정상화 확인 (메트릭/스모크) |
+
+## Impact
+
+- Users affected: X
+- Duration: Y minutes (감지 → 복구)
+- 데이터 손실: Yes / No (있으면 범위)
+- 외부 노출 (보안): Yes / No
+- 매출/SLO 영향: $ / 위반 항목
+
+## Root cause analysis (5-Why)
+
+```
+증상: <사용자에게 보인 것>
+1-Why: <표면 원인>
+2-Why: <왜 그게 발생?>
+3-Why: <왜 그 조건이 가능?>
+4-Why: <왜 그게 시스템에 들어왔나?>
+5-Why: <어떤 패턴/문화가 결여됐나?>
+근본 원인: <시스템 원인 — 사람 X>
+```
+
+증거: Grafana 링크 / Loki 쿼리 / commit URL / DB query
+
+## Resolution
+
+```
+즉시 조치 (T+0~2h):
+- commit <hash> — <한 줄>
+- 명령: <복구 명령어>
+
+검증:
+- 스모크 테스트 결과
+- 메트릭 정상화 timestamp
+```
+
+## Action Items
+
+| # | 항목 | 담당 | 마감 | 상태 |
+|---|---|---|---|---|
+| 1 | <측정 가능한 완료 조건> | @alice | YYYY-MM-DD | open |
+| 2 | <PR merge / skill 작성 / CI 추가> | @bob | YYYY-MM-DD | open |
+| 3 | <skill 추출 — 가능 시> | @carol | YYYY-MM-DD | open |
+
+## Lessons learned
+
+- 영역: 코드 / 환경 / 설정 / 운영 / 사용자 실수
+- 패턴 1줄: <다른 시스템에 일반화 가능한 명제>
+- skill 추출 후보: <skill 이름 또는 N/A>
+- 책 case study 후보: Yes / No
