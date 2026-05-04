@@ -84,6 +84,7 @@ REGISTRY=(
   "coverage-instrumentation-pattern|skill|Python 3.12+ coverage 측정 (ctrace vs sysmon, COVERAGE_CORE=sysmon) — gem-llm case 23 검증 (47% → 100%)"
   "subagent-prompt-engineering-pattern|skill|Claude Code Agent tool 서브에이전트 prompt 작성 (race 대비 + atomic commit + 보고 단어 제한, 60h 530 디스패치 검증)"
   "book-builder|skill|프로젝트 설계/기술 문서 → 단행본 (Markdown + DOCX + PDF × 한/영) — pandoc + xelatex 파이프라인, 17장 구성, 한/영 이중 언어 템플릿, 품질 게이트"
+  "md-raid-deadlock-recovery|skill|Linux md/raid5 stripe-cache 데드락 진단 + 안전 재부팅 (mdcheck 자동 재트리거 차단 + fsck 스킵 + cloudflared SSH 백업 + 컨테이너 자동기동) — abada-65 28TB 136 컨테이너 검증"
 )
 
 # ── helpers ────────────────────────────────────────────────────────────────

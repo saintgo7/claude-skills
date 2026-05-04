@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (현재 main 브랜치에 머지되었으나 아직 태깅되지 않은 변경사항이 여기에 누적됩니다.)
 
+### Added
+- `md-raid-deadlock-recovery` skill — Linux md/RAID5 stripe-cache 데드락 진단 + 안전 재부팅 + 재발 방지. 4가지 위험 자동 점검 (mdcheck 자동 재트리거 / 루트 fsck 부팅 지연 / SSH 백업 경로 / 컨테이너 자동기동). abada-int-65 (Xeon Gold 5215, 28TB RAID5, 136 컨테이너) 2026-05-04 사고 검증. `diagnose.sh` 7지표 자동 감지 + `pre-reboot-harden.sh` 4가지 차단 + `post-reboot-verify.sh` 6단계 검증 + 실 사고 케이스 스터디 포함.
+
+### Notes
+- REGISTRY: 62 → **63 entries**
+
 ## [0.8.9] — 2026-05-03
 
 ### Added
