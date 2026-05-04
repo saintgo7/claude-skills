@@ -74,6 +74,24 @@ echo
 warn "다른 PC에서 'ssh -o ProxyCommand=\"cloudflared access ssh --hostname <host>\" ...' 실접속 1회 검증할 것"
 
 # ---------------------------------------------------------
+cyan "3-D-pre. Docker daemon TimeoutStopUSec 점검 (재부팅 방법 결정)"
+
+if command -v docker >/dev/null && systemctl list-unit-files | grep -q "^docker.service"; then
+  docker_timeout=$(systemctl show docker | awk -F= '/^TimeoutStopUSec=/ {print $2}')
+  echo "    docker.service TimeoutStopUSec = $docker_timeout"
+  case "$docker_timeout" in
+    infinity|0)
+      warn "TimeoutStopUSec=$docker_timeout — 'sudo reboot'이 무한 hang 가능"
+      warn "재부팅 시 반드시: sudo systemctl reboot --force --force"
+      warn "또는: echo b | sudo tee /proc/sysrq-trigger (다른 SSH 셸에서)"
+      ;;
+    *)
+      ok "Docker timeout 합리적 — 'sudo reboot' 사용 가능"
+      ;;
+  esac
+fi
+
+# ---------------------------------------------------------
 cyan "3-D. 컨테이너 자동기동 정책 분포"
 
 if command -v docker >/dev/null; then
@@ -95,7 +113,9 @@ cyan "사전 작업 완료"
 cat <<'EOF'
 다음 단계:
   1. 다른 PC에서 백업 SSH 실접속 1회 검증 (위 cloudflared ProxyCommand)
-  2. 사용자 GO 사인 후:
+  2. 사용자 GO 사인 후 (Docker timeout=infinity면 첫 명령부터 --force --force 권장):
+       sudo systemctl reboot --force --force
+       # 또는 (Docker timeout 합리적인 경우):
        sudo reboot
   3. 만약 reboot이 hang하면 (다른 PC에서 cloudflared SSH 들어가서):
        echo b | sudo tee /proc/sysrq-trigger

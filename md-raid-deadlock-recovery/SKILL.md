@@ -105,14 +105,39 @@ docker ps -a --format '{{.Names}} {{.HostConfig.RestartPolicy.Name}}' | awk '$2=
 
 ## 4. 재부팅 절차
 
+⚠️ **`sudo reboot`은 데드락 상황에서 무한 hang 가능**. Docker daemon이 `TimeoutStopUSec=infinity` (Ubuntu 기본)로 설정돼 있으면 systemd가 Docker 종료를 무한 대기 → Docker는 컨테이너 fsync 무한 대기 → 전체 shutdown hang. systemd ShutdownWatchdog (기본 10분) 후에야 강제 종료.
+
+**권장: shutdown 시퀀스를 건너뛰는 `--force --force`:**
+
 ```bash
 # 위 4가지 사전 점검 통과 후:
-sudo reboot
-
-# reboot 명령 자체가 hang하면 (다른 PC에서 cloudflared SSH 들어가서):
-echo b | sudo tee /proc/sysrq-trigger   # 즉시 강제재부팅
-# (CONFIG_MAGIC_SYSRQ + /proc/sys/kernel/sysrq=1 필요)
+sudo systemctl reboot --force --force
+# 효과:
+#  - 모든 unit stop 시퀀스 건너뜀 (Docker timeout=∞ 우회)
+#  - sync 호출 건너뜀 (어차피 데드락이라 hang)
+#  - 즉시 reboot syscall 호출
+#  - 데이터 손실: dirty pages만 (~수백 KB), ACK된 모든 커밋은 안전
 ```
+
+**Plan B — 위 명령조차 hang하면** (다른 PC의 backup SSH 셸에서):
+
+```bash
+echo b | sudo tee /proc/sysrq-trigger
+# /proc/sys/kernel/sysrq에 reboot 비트(128)가 활성이어야 함:
+#   cat /proc/sys/kernel/sysrq   # 1 또는 ≥128 포함
+```
+
+**왜 그냥 `sudo reboot` 쓰면 안 되나:**
+
+1. `systemd`가 `docker.service` SIGTERM 송신
+2. dockerd가 컨테이너 graceful stop 시도
+3. 컨테이너들이 fsync에서 hang (md 데드락)
+4. dockerd가 무한 대기 (내부 timeout 없음)
+5. systemd가 dockerd 종료 무한 대기 (`TimeoutStopUSec=infinity`)
+6. → 10분 hang 후 ShutdownWatchdog가 강제 reboot
+7. 그 동안 사용자는 SSH 끊긴 상태에서 무한 대기 → 서버실 가야 하나 고민
+
+이 패턴이 직전 사고의 "SSH 안 떠서 서버실 갔다" 원인 중 하나.
 
 ## 5. 재부팅 후 즉시 검증
 
